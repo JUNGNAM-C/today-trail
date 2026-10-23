@@ -877,4 +877,15 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
   paint(0); prog.last = prog.last || 0;
   renderHome();
 })();
+
+  /* 넓은 화면(PC)에서는 폰 틀을 화면 높이에 맞춰 키운다 */
+  function fitScreen() {
+    var z = 1, w = window.innerWidth, h = window.innerHeight;
+    if (w >= 700) z = Math.max(1, Math.min(h / 700, w / 520, 1.8));
+    app.style.maxWidth = w >= 700 ? "520px" : "";
+    app.style.zoom = z > 1.02 ? String(z) : "";
+    app.style.height = z > 1.02 ? (h / z) + "px" : "";
+  }
+  fitScreen();
+  window.addEventListener("resize", function () { fitScreen(); if (app.getAttribute("data-view") === "home") { layoutStack(); drawBoxArt(); } });
 </script>
