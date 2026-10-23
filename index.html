@@ -192,6 +192,16 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, .deck:focus-visib
 .chip { appearance: none; background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 999px; min-height: 36px; padding: 0 14px; cursor: pointer; font-size: 15px; }
 .chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
 textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+.xcard { --surface: #000000; --ink: #F0F0F0; --bg: #000000; --muted: #A8A8A8; --line: #333333; --quote-bg: #161616; --accent: #FF5C9A; --accent-ink: #1A0A12; --interp: #E8BC52; --interp-bg: #2A220C; --ok: #CFCFCF; --ok-bg: #222222; --warn: #F0B48F; --warn-bg: #3A2517; background: #000000; color: #F0F0F0; font-family: var(--font-body); font-size: 15px; line-height: 1.75; word-break: normal; }
+.xcard *, .xcard *::before { word-break: normal !important; text-wrap: wrap !important; letter-spacing: normal; }
+.xcard .cv-kick, .xcard .xpg, .xcard .orig .lab, .xcard .lab2 { letter-spacing: .1em; }
+.xcard .card { overflow: visible; padding-bottom: 64px; }
+.xcard .cv-q { border-top-color: rgba(255,255,255,.3); border-bottom-color: rgba(255,255,255,.3); }
+.xcard .card.cover .flow li { border-top-color: rgba(255,255,255,.22); }
+.xpg { position: absolute; bottom: 22px; right: 22px; z-index: 3; font-family: var(--font-data); font-size: 15px; font-weight: 500; letter-spacing: .1em; color: #FF5C9A; }
+.exp { margin-top: auto; display: flex; flex-direction: column; gap: 8px; }
+.saveall { appearance: none; border: 0; background: var(--accent); color: var(--accent-ink); border-radius: 999px; min-height: 52px; padding: 0 18px; font-weight: 600; font-size: 16px; cursor: pointer; }
+.saveall:disabled { opacity: .6; }
 .saved { font-size: 14px; color: var(--muted); min-height: 1.4em; }
 @media (prefers-reduced-motion: reduce) { .seg i { transition: none; } }
 </style>
@@ -522,7 +532,8 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
         '<button type="button" class="chip" data-stance="agree" aria-pressed="false">동의하는 원칙</button>' +
         '<button type="button" class="chip" data-stance="doubt" aria-pressed="false">의문이 드는 점</button></div>' +
         '<textarea id="memo" placeholder="떠오른 생각을 적어 두세요."></textarea>' +
-        '<span class="saved" id="saved" aria-live="polite"></span>';
+        '<span class="saved" id="saved" aria-live="polite"></span>' +
+        '<div class="exp"><button type="button" class="saveall" id="saveall">전체 카드 이미지로 저장</button><span class="saved" id="exp-st" aria-live="polite"></span></div>';
       el.innerHTML = h;
       deck.appendChild(el);
       return;
@@ -1044,6 +1055,128 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
 
   paint(0);
   renderHome();
+
+  /* ---------- 전체 카드 이미지로 저장 (카드마다 글이 잘리지 않고 가득 차게, 1080px 폭) ---------- */
+  var saveBtn = document.getElementById("saveall"), expSt = document.getElementById("exp-st"), exported = null;
+  var SANS = '"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif', SERIFKO = '"Noto Serif KR",serif', QUOTE = 'Newsreader,Georgia,serif', MONO = '"IBM Plex Mono",ui-monospace,monospace';
+  function plain(s) { var d = document.createElement("div"); d.innerHTML = String(s == null ? "" : s); return d.textContent.replace(/\s+/g, " ").trim(); }
+  function wrapText(ctx, text, maxW) {
+    var words = text.split(" "), lines = [], cur = "";
+    words.forEach(function (w) {
+      var test = cur ? cur + " " + w : w;
+      if (ctx.measureText(test).width <= maxW) { cur = test; return; }
+      if (cur) lines.push(cur);
+      if (ctx.measureText(w).width <= maxW) { cur = w; return; }
+      cur = "";                                                    /* 한 단어가 한 줄보다 길면 글자 단위로 자른다 */
+      for (var i = 0; i < w.length; i++) { if (ctx.measureText(cur + w[i]).width > maxW && cur) { lines.push(cur); cur = ""; } cur += w[i]; }
+    });
+    if (cur) lines.push(cur);
+    return lines;
+  }
+  function layoutCard(ctx, c, draw, W, art) {
+    var P = 22, TW = W - 2 * P, y = 0;
+    var line = function (txt, font, color, lh, x, maxW, extra) {
+      ctx.font = font; var ls = wrapText(ctx, txt, maxW);
+      if (draw) { ctx.fillStyle = color; ctx.textBaseline = "middle"; ls.forEach(function (l, i) { ctx.fillText(l, x, y + lh * i + lh / 2); }); }
+      y += lh * ls.length; return ls.length;
+    };
+    var boxes = draw ? (layoutCard.boxes || []) : (layoutCard.boxes = []);
+    if (draw) boxes.forEach(function (b) { ctx.fillStyle = b.bg; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(P, b.y, TW, b.h, 8) : ctx.rect(P, b.y, TW, b.h); ctx.fill(); });
+    var box = function (bg, h0, fn, pad) {                          /* 배경 상자: 측정할 때 위치를 기록해 두었다가 그릴 때 먼저 칠한다 */
+      var start = y; y += pad; fn(); y += pad;
+      if (!draw) boxes.push({ y: start, h: y - start, bg: bg });
+    };
+    y = 210;
+    if (c.cover) {
+      y = 24;
+      line("TRAIL RUNNING · PODCAST", "400 13px " + MONO, "#B0B0B0", 18, P, TW);
+      y = 205;
+      line(plain(c.en), "italic 500 40px " + QUOTE, "#F0F0F0", 45, P, TW * 0.9); y += 14;
+      line(plain(c.ko), "700 17px " + SERIFKO, "#F0F0F0", 26, P, TW); y += 10;
+      line(plain(c.who), "600 15px " + SANS, "#F0F0F0", 24, P, TW); y += 18;
+      if (draw) { ctx.fillStyle = "rgba(255,255,255,.3)"; ctx.fillRect(P, y, TW, 1); } y += 14;
+      line(plain(c.question), "700 17px " + SERIFKO, "#F0F0F0", 28, P, TW); y += 14;
+      if (draw) { ctx.fillStyle = "rgba(255,255,255,.3)"; ctx.fillRect(P, y, TW, 1); } y += 8;
+      c.flow.forEach(function (f, k) {
+        y += 10;
+        if (draw) { ctx.font = "400 14px " + MONO; ctx.fillStyle = "#FF5C9A"; ctx.textBaseline = "middle"; ctx.fillText(String(k + 1), P, y + 12); }
+        line(plain(f[0]), "600 16px " + SANS, "#F0F0F0", 24, P + 30, TW - 30);
+        line(plain(f[1]), "400 15px " + SANS, "#A8A8A8", 25, P + 30, TW - 30);
+        y += 10; if (draw) { ctx.fillStyle = "rgba(255,255,255,.2)"; ctx.fillRect(P, y, TW, 1); } y += 2;
+      });
+      return y + 64;
+    }
+    line(plain(c.title), "600 15px " + SANS, "#A8A8A8", 24, P, TW); y += 12;
+    box("#161616", 0, function () {
+      line("ORIGINAL", "400 12.5px " + MONO, "#A8A8A8", 18, P + 16, TW - 32); y += 4;
+      line(plain(c.orig.text), "italic 500 22px " + QUOTE, "#F0F0F0", 30, P + 16, TW - 32); y += 12;
+      if (draw) { ctx.fillStyle = "#333"; ctx.fillRect(P + 16, y, TW - 32, 1); } y += 11;
+      line(plain(c.ko), "600 16px " + SANS, "#F0F0F0", 27, P + 16, TW - 32);
+    }, 16);
+    y += 16;
+    (c.terms || []).forEach(function (tm) {
+      line(plain(tm[0]), "italic 500 16px " + QUOTE, "#F0F0F0", 24, P, TW);
+      line(plain(tm[1]), "400 15px " + SANS, "#F0F0F0", 26, P, TW); y += 8;
+    });
+    y += 8;
+    line("설명", "600 13px " + SANS, "#A8A8A8", 22, P, TW); y += 4;
+    c.expl.forEach(function (pp) { line(plain(pp), "400 15px " + SANS, "#F0F0F0", 27, P, TW); y += 10; });
+    if (c.interp) {
+      y += 6;
+      box("#2A220C", 0, function () {
+        line("해석  제 생각이며 원본에 없는 내용", "600 13px " + SANS, "#E8BC52", 22, P + 14, TW - 28); y += 6;
+        c.interp.forEach(function (pp) { line(plain(pp), "400 15px " + SANS, "#F0F0F0", 26, P + 14, TW - 28); y += 8; });
+        y -= 8;
+      }, 14);
+    }
+    return y + 64;
+  }
+  function makeImages() {
+    var TOT = 390, M = 22, W = TOT - 2 * M, scale = 1080 / TOT;
+    var src = cards.filter(function (c) { return !c.memo; });
+    var out = [], idx = 0;
+    var fontsReady = Promise.all(['600 15px "IBM Plex Sans KR"', '400 15px "IBM Plex Sans KR"', 'italic 500 22px Newsreader', '700 17px "Noto Serif KR"', '400 13px "IBM Plex Mono"'].map(function (f) { return document.fonts.load(f, "가Aa1"); })).catch(function () {});
+    function next() {
+      if (idx >= src.length) return Promise.resolve(out);
+      var c = src[idx];
+      expSt.textContent = "이미지 만드는 중… " + (idx + 1) + " / " + src.length;
+      var mc = document.createElement("canvas").getContext("2d");
+      var H = Math.max(Math.round(W * 1.3), Math.ceil(layoutCard(mc, c, false, W)));
+      var f = document.createElement("canvas"); f.width = Math.round(TOT * scale); f.height = Math.round((H + 2 * M) * scale);
+      var x = f.getContext("2d"); x.fillStyle = "#000"; x.fillRect(0, 0, f.width, f.height);
+      x.save(); x.scale(scale, scale); x.translate(M, M);
+      var rr = function (inset) { x.beginPath(); x.roundRect ? x.roundRect(inset, inset, W - 2 * inset, H - 2 * inset, 22) : x.rect(inset, inset, W - 2 * inset, H - 2 * inset); };
+      rr(0); x.save(); x.clip();
+      var art = document.createElement("canvas"); drawArt(art, { motif: ART.today.motif, seed: ART.today.seed }, W, 340);
+      x.drawImage(art, 0, 0, W, 340);
+      layoutCard(x, c, true, W);
+      x.textBaseline = "alphabetic"; x.font = "500 15px " + MONO; x.fillStyle = "#FF5C9A"; x.textAlign = "right"; x.fillText(String(idx + 1).padStart(2, "0") + " / " + String(N).padStart(2, "0"), W - 22, H - 24); x.textAlign = "left";
+      x.restore();
+      x.save(); x.strokeStyle = "#FF3D9A"; x.shadowColor = "#FF3D9A"; x.lineWidth = 3; x.shadowBlur = 22; rr(1.5); x.stroke(); x.shadowBlur = 8; rr(1.5); x.stroke(); x.restore();
+      x.restore();
+      return new Promise(function (res) { f.toBlob(function (b) { out.push(new File([b], "오늘의트레일_" + String(idx + 1).padStart(2, "0") + ".png", { type: "image/png" })); idx++; res(); }, "image/png"); }).then(next);
+    }
+    return fontsReady.then(next);
+  }
+  function deliver(files) {
+    if (navigator.canShare && navigator.canShare({ files: files }) && navigator.share) {
+      navigator.share({ files: files, title: "오늘의 트레일" }).then(function () { expSt.textContent = "저장 창에서 '이미지 저장'을 선택하세요."; }).catch(function () { expSt.textContent = "저장을 취소했습니다."; });
+      return;
+    }
+    files.forEach(function (f, i) {
+      setTimeout(function () { var a = document.createElement("a"); a.href = URL.createObjectURL(f); a.download = f.name; document.body.appendChild(a); a.click(); a.remove(); }, i * 350);
+    });
+    expSt.textContent = files.length + "장을 내려받았습니다.";
+  }
+  saveBtn.addEventListener("click", function () {
+    if (exported) { deliver(exported); return; }
+    saveBtn.disabled = true; expSt.textContent = "준비 중…";
+    makeImages().then(function (files) {
+      exported = files; saveBtn.disabled = false;
+      saveBtn.textContent = "이미지 " + files.length + "장 저장하기";
+      expSt.textContent = "준비되었습니다. 버튼을 한 번 더 누르면 저장됩니다.";
+    }).catch(function (e) { saveBtn.disabled = false; expSt.textContent = "이미지를 만들지 못했습니다: " + e; });
+  });
   /* 넓은 화면(PC)에서는 폰 틀을 화면 높이에 맞춰 키운다 */
   function fitScreen() {
     var z = 1, w = window.innerWidth, h = window.innerHeight;
