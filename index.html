@@ -199,6 +199,11 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
 .xcard .cv-q { border-top-color: rgba(255,255,255,.3); border-bottom-color: rgba(255,255,255,.3); }
 .xcard .card.cover .flow li { border-top-color: rgba(255,255,255,.22); }
 .xpg { position: absolute; bottom: 22px; right: 22px; z-index: 3; font-family: var(--font-data); font-size: 15px; font-weight: 500; letter-spacing: .1em; color: #FF5C9A; }
+.card, .card * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.card textarea, .card #memo { -webkit-user-select: text; user-select: text; }
+.snt { cursor: pointer; border-radius: 3px; -webkit-tap-highlight-color: transparent; transition: background .15s; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+.snt.sel { background: rgba(255,61,154,.30); box-shadow: 0 0 0 2px rgba(255,61,154,.30); }
+.qclr { appearance: none; border: 1px solid #444; background: none; color: #A8A8A8; border-radius: 999px; min-height: 40px; padding: 0 14px; font-size: 14px; cursor: pointer; }
 .qpanel { position: fixed; left: 50%; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 30; display: none; width: min(calc(100vw - 24px), 420px); background: #000; color: #F0F0F0; border: 1.5px solid #FF3D9A; border-radius: 18px; padding: 12px 14px; box-shadow: 0 0 16px rgba(255,61,154,.55); flex-direction: column; gap: 10px; }
 .qpanel.on { display: flex; }
 .qrow { display: flex; align-items: center; gap: 8px; }
@@ -591,6 +596,7 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
   }
   function paint(i) {
     cur = i;
+    if (typeof clearSel === "function" && typeof qPanel !== "undefined" && qPanel) clearSel();
     segs.forEach(function (b, k) {
       b.classList.toggle("on", k <= i);
       b.classList.toggle("cur", k === i);
@@ -1179,7 +1185,7 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
   var qPanel = document.createElement("div"); qPanel.className = "qpanel"; qPanel.setAttribute("role", "group"); qPanel.setAttribute("aria-label", "선택한 글 이미지 저장");
   qPanel.innerHTML = '<div class="qrow"><div class="qseg" role="group" aria-label="글자 크기">' +
     ["s", "m", "l"].map(function (k) { return '<button type="button" data-q="' + k + '" aria-pressed="false">' + Q_LABEL[k] + '</button>'; }).join("") +
-    '</div><span class="qcount" id="qcount" aria-live="polite"></span></div><button type="button" class="qsave" id="qsave">선택 영역 이미지로 저장</button>';
+    '</div><button type="button" class="qclr" id="qclr">해제</button><span class="qcount" id="qcount" aria-live="polite"></span></div><button type="button" class="qsave" id="qsave">선택 영역 이미지로 저장</button>';
   var qToast = document.createElement("div"); qToast.className = "qtoast"; qToast.setAttribute("aria-live", "polite");
   document.body.appendChild(qPanel); document.body.appendChild(qToast);
   var qCount = qPanel.querySelector("#qcount"), qSave = qPanel.querySelector("#qsave"), qText = "", qIdx = 0, qLen = 0, qTimer = null;
@@ -1189,19 +1195,44 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
     qCount.textContent = qLen + " / " + Q_MAX + "자"; qCount.classList.toggle("over", qLen > Q_MAX);
     qSave.disabled = qLen > Q_MAX; qSave.textContent = qLen > Q_MAX ? "500자 이하로 선택해 주세요" : "선택 영역 이미지로 저장";
   }
-  document.addEventListener("selectionchange", function () {
-    var sel = window.getSelection(), ok = false;
-    if (sel && sel.rangeCount && !sel.isCollapsed && app.getAttribute("data-view") === "read") {
-      var n = sel.anchorNode, el = n && (n.nodeType === 3 ? n.parentElement : n), card = el && el.closest && el.closest(".card");
-      if (card && !el.closest("textarea") && !card.querySelector("#memo")) {
-        qText = sel.toString().replace(/[ \t ]+/g, " ").replace(/ ?\n ?/g, "\n").replace(/\n{2,}/g, "\n").trim();
-        qIdx = Array.prototype.indexOf.call(deck.children, card); qLen = Array.from(qText).length;
-        ok = qLen > 1;
-      }
-    }
-    if (ok) paintQ();
-    qPanel.classList.toggle("on", ok);
+  /* 문장을 눌러 선택한다 (휴대폰 기본 선택/복사 메뉴가 뜨지 않도록 직접 선택 방식을 쓴다) */
+  function sentencize(root) {
+    var targets = root.querySelectorAll(".orig .q, .orig .ko, .expl p, .interp p, .bridge, .terms li, .cover-q");
+    Array.prototype.forEach.call(targets, function (el) {
+      var walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null), nodes = [], n;
+      while ((n = walker.nextNode())) { if (n.nodeValue.trim() && !(n.parentElement && n.parentElement.closest("a"))) nodes.push(n); }
+      nodes.forEach(function (tn) {
+        var parts = tn.nodeValue.match(/[^.!?。]*[.!?。]+["'’”)\]]*\s*|[^.!?。]+$/g) || [tn.nodeValue];
+        if (parts.length === 1 && !/\S/.test(parts[0])) return;
+        var frag = document.createDocumentFragment();
+        parts.forEach(function (s) { if (!s) return; if (!/\S/.test(s)) { frag.appendChild(document.createTextNode(s)); return; } var sp = document.createElement("span"); sp.className = "snt"; sp.textContent = s; frag.appendChild(sp); });
+        tn.parentNode.replaceChild(frag, tn);
+      });
+    });
+  }
+  sentencize(deck);
+  function clearSel() { Array.prototype.forEach.call(document.querySelectorAll(".snt.sel"), function (e) { e.classList.remove("sel"); }); if (qPanel) qPanel.classList.remove("on"); qText = ""; qLen = 0; }
+  function updateQ() {
+    var sel = Array.prototype.slice.call(deck.querySelectorAll(".snt.sel"));
+    if (!sel.length) { qPanel.classList.remove("on"); qText = ""; qLen = 0; return; }
+    var out = "", lastBlock = null;
+    sel.forEach(function (s) {
+      var blk = s.closest("p, li, .q, .ko, .bridge, h2") || s.parentElement, tx = s.textContent.replace(/\s+/g, " ").trim();
+      if (lastBlock === null) out = tx; else out += (blk === lastBlock ? " " : "\n") + tx;
+      lastBlock = blk;
+    });
+    qText = out; qIdx = Array.prototype.indexOf.call(deck.children, sel[0].closest(".card")); qLen = Array.from(qText).length;
+    paintQ(); qPanel.classList.add("on");
+  }
+  deck.addEventListener("click", function (e) {
+    var s = e.target.closest && e.target.closest(".snt");
+    if (!s || e.target.closest("a, button, textarea")) return;
+    var card = s.closest(".card");
+    Array.prototype.forEach.call(deck.querySelectorAll(".snt.sel"), function (x) { if (x.closest(".card") !== card) x.classList.remove("sel"); });
+    s.classList.toggle("sel"); updateQ();
   });
+  qPanel.querySelector("#qclr").addEventListener("click", function () { clearSel(); });
+  try { if (!localStorage.getItem("trail.hint1")) { localStorage.setItem("trail.hint1", "1"); setTimeout(function () { toast("문장을 누르면 선택됩니다. 선택한 글을 이미지로 저장할 수 있어요."); }, 1500); } } catch (er) {}
   ["mousedown", "touchstart"].forEach(function (ev) { qPanel.addEventListener(ev, function (e) { e.preventDefault(); }, { passive: false }); });
   qPanel.addEventListener("click", function (e) {
     var b = e.target.closest("[data-q]");
