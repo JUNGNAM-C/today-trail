@@ -1134,6 +1134,7 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
     app.style.zoom = z > 1.02 ? String(z) : "";
     app.style.height = z > 1.02 ? (h / z) + "px" : "";
   }
+  window.__drawArt = drawArt; window.__ART = ART;
   fitScreen();
   window.addEventListener("resize", function () { fitScreen(); if (app.getAttribute("data-view") === "home") { layoutStack(); drawBoxArt(); } });
 })();

@@ -1,3 +1,3 @@
-a=open("../index_src.html",encoding="utf-8").read()
-h='<!doctype html>\n<html lang="ko">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n'
+a=open("app.html",encoding="utf-8").read()
+h='<!doctype html>\n<html lang="ko">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n<meta name="theme-color" content="#000000">\n<meta name="apple-mobile-web-app-capable" content="yes">\n<meta name="mobile-web-app-capable" content="yes">\n<meta name="apple-mobile-web-app-title" content="오늘의 트레일">\n<meta name="apple-mobile-web-app-status-bar-style" content="black">\n<link rel="apple-touch-icon" href="icon-180.png">\n<link rel="icon" type="image/png" href="icon-192.png">\n<link rel="manifest" href="manifest.json">\n'
 open("index_gh.html","w",encoding="utf-8").write(h+a+"\n</html>\n")
