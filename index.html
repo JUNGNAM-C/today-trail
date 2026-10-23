@@ -1233,7 +1233,6 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
   });
   qPanel.querySelector("#qclr").addEventListener("click", function () { clearSel(); });
   try { if (!localStorage.getItem("trail.hint1")) { localStorage.setItem("trail.hint1", "1"); setTimeout(function () { toast("문장을 누르면 선택됩니다. 선택한 글을 이미지로 저장할 수 있어요."); }, 1500); } } catch (er) {}
-  ["mousedown", "touchstart"].forEach(function (ev) { qPanel.addEventListener(ev, function (e) { e.preventDefault(); }, { passive: false }); });
   qPanel.addEventListener("click", function (e) {
     var b = e.target.closest("[data-q]");
     if (b) { qSize = b.getAttribute("data-q"); try { localStorage.setItem("trail.qsize", qSize); } catch (er) {} paintQ(); }
