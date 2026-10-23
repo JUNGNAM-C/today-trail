@@ -1107,7 +1107,7 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
     var y = Q_TOP + Math.max(0, (Q_H - Q_TOP - Q_BOTTOM - L.h) / 2); L.lines.forEach(function (l) { if (l === null) { y += Math.round(L.lh * 0.45); return; } x.fillText(l, Q_PAD, y + L.lh / 2); y += L.lh; });
     var ay = Q_H - Q_BOTTOM + 30; x.font = "400 13px " + SANS; x.fillStyle = "#A8A8A8";
     [plain(c0.ko), plain(c0.who) + (c.title ? " · " + plain(c.title) : "")].forEach(function (l, i) { x.fillText(wrapText(x, l, Q_W - 2 * Q_PAD)[0] || l, Q_PAD, ay + i * 20); });
-    x.textBaseline = "alphabetic"; x.textAlign = "right"; x.font = "500 13px " + MONO; x.fillStyle = "#FF5C9A"; x.fillText("오늘의 트레일", Q_W - 22, 34); x.textAlign = "left";
+    x.textBaseline = "alphabetic"; x.textAlign = "right"; x.font = "500 13px " + MONO; x.fillStyle = "#FF5C9A"; x.fillText("오늘의 트레일", Q_W - 22, Q_H - 22); x.textAlign = "left";
     x.restore();
     x.save(); x.strokeStyle = "#FF3D9A"; x.shadowColor = "#FF3D9A"; x.lineWidth = 3; x.shadowBlur = 22; rr(1.5); x.stroke(); x.shadowBlur = 8; rr(1.5); x.stroke(); x.restore();
     x.restore();
