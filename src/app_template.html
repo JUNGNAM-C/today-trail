@@ -1076,7 +1076,7 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
     var b = e.target.closest("[data-q]");
     if (b) { qSize = b.getAttribute("data-q"); try { localStorage.setItem("trail.qsize", qSize); } catch (er) {} paintQ(); }
   });
-  var Q_W = 346, Q_H = 476, Q_TOP = 50, Q_BOTTOM = 92, Q_PAD = 28;         /* 카드 346×476 + 바깥 여백 22 → 이미지 390×520 = 1080×1440 (3:4) */
+  var Q_W = 346, Q_H = 476, Q_TOP = 50, Q_BOTTOM = 196, Q_PAD = 28;         /* 카드 346×476 + 바깥 여백 22 → 이미지 390×520 = 1080×1440 (3:4) */
   function qLayout(ctx, text, px) {
     ctx.font = "500 " + px + "px " + SANS;
     var TW = Q_W - 2 * Q_PAD, lh = Math.round(px * 1.62), lines = [];
@@ -1097,13 +1097,12 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
     x.save(); x.scale(scale, scale); x.translate(M, M);
     var rr = function (i) { x.beginPath(); x.roundRect ? x.roundRect(i, i, Q_W - 2 * i, Q_H - 2 * i, 22) : x.rect(i, i, Q_W - 2 * i, Q_H - 2 * i); };
     rr(0); x.save(); x.clip();
-    var art = document.createElement("canvas"); drawArt(art, { motif: ART.today.motif, seed: ART.today.seed }, Q_W, 340);
-    x.globalAlpha = 0.22; x.drawImage(art, 0, 0, Q_W, 340); x.globalAlpha = 1;
+    var art = document.createElement("canvas"); var AH = 130; drawArt(art, { motif: ART.today.motif, seed: ART.today.seed }, Q_W, AH); x.drawImage(art, 0, Q_H - AH + 34, Q_W, AH);
     x.textBaseline = "middle"; x.font = "500 " + L.px + "px " + SANS; x.fillStyle = "#F0F0F0";
     var y = Q_TOP + Math.max(0, (Q_H - Q_TOP - Q_BOTTOM - L.h) / 2); L.lines.forEach(function (l) { if (l === null) { y += Math.round(L.lh * 0.45); return; } x.fillText(l, Q_PAD, y + L.lh / 2); y += L.lh; });
     var ay = Q_H - Q_BOTTOM + 30; x.font = "400 13px " + SANS; x.fillStyle = "#A8A8A8";
     [plain(c0.ko), plain(c0.who) + (c.title ? " · " + plain(c.title) : "")].forEach(function (l, i) { x.fillText(wrapText(x, l, Q_W - 2 * Q_PAD)[0] || l, Q_PAD, ay + i * 20); });
-    x.textBaseline = "alphabetic"; x.textAlign = "right"; x.font = "500 13px " + MONO; x.fillStyle = "#FF5C9A"; x.fillText("오늘의 트레일", Q_W - 22, Q_H - 22); x.textAlign = "left";
+    x.textBaseline = "alphabetic"; x.textAlign = "right"; x.font = "500 13px " + MONO; x.fillStyle = "#FF5C9A"; x.fillText("오늘의 트레일", Q_W - 22, 34); x.textAlign = "left";
     x.restore();
     x.save(); x.strokeStyle = "#FF3D9A"; x.shadowColor = "#FF3D9A"; x.lineWidth = 3; x.shadowBlur = 22; rr(1.5); x.stroke(); x.shadowBlur = 8; rr(1.5); x.stroke(); x.restore();
     x.restore();
