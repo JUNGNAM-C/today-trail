@@ -1097,7 +1097,12 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
     x.save(); x.scale(scale, scale); x.translate(M, M);
     var rr = function (i) { x.beginPath(); x.roundRect ? x.roundRect(i, i, Q_W - 2 * i, Q_H - 2 * i, 22) : x.rect(i, i, Q_W - 2 * i, Q_H - 2 * i); };
     rr(0); x.save(); x.clip();
-    var art = document.createElement("canvas"); var AH = 130; drawArt(art, { motif: ART.today.motif, seed: ART.today.seed }, Q_W, AH); x.drawImage(art, 0, Q_H - AH + 34, Q_W, AH);
+    var art = document.createElement("canvas"); drawArt(art, { motif: ART.today.motif, seed: ART.today.seed }, Q_W, 340);
+    var ad = art.getContext("2d").getImageData(0, 0, art.width, art.height).data, top = art.height, bot = 0, sx = art.width / Q_W, yy, xx;
+    for (yy = 0; yy < art.height; yy++) for (xx = 0; xx < art.width; xx += 2) { var q = (yy * art.width + xx) * 4; if (ad[q] > 60 || ad[q + 1] > 60) { if (yy < top) top = yy; if (yy > bot) bot = yy; break; } }
+    if (bot <= top) { top = 0; bot = art.height - 1; }
+    var srcH = Math.min(bot - top + 1, Math.round(150 * sx)), srcY = bot - srcH + 1, dstH = srcH / sx;
+    x.globalAlpha = 0.4; x.drawImage(art, 0, srcY, art.width, srcH, 0, Q_H - dstH, Q_W, dstH); x.globalAlpha = 1;
     x.textBaseline = "middle"; x.font = "500 " + L.px + "px " + SANS; x.fillStyle = "#F0F0F0";
     var y = Q_TOP + Math.max(0, (Q_H - Q_TOP - Q_BOTTOM - L.h) / 2); L.lines.forEach(function (l) { if (l === null) { y += Math.round(L.lh * 0.45); return; } x.fillText(l, Q_PAD, y + L.lh / 2); y += L.lh; });
     var ay = Q_H - Q_BOTTOM + 30; x.font = "400 13px " + SANS; x.fillStyle = "#A8A8A8";
