@@ -1,0 +1,1054 @@
+<title>오늘의 트레일</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600&family=Newsreader:ital,wght@1,500&family=Noto+Serif+KR:wght@600;700&display=swap">
+<style>
+/* Layout: 모바일 앱 한 화면. 하단 탭(오늘 / 지난 호 / 내 메모)으로 이동하고, 읽기 화면에서는 탭이 숨고 카드를 좌우로 넘김 */
+:root {
+  --bg: #F0F0F0; --surface: #FFFFFF; --ink: #1A1A1A; --muted: #5F5F5F; --line: #D4D4D4;
+  --quote-bg: #E6E6E6; --accent: #D61F69; --accent-ink: #FFFFFF; --ok: #3A3A3A; --ok-bg: #E4E4E4;
+  --warn: #8A3B12; --warn-bg: #F6E3D6; --interp: #8A5A00; --interp-bg: #F6EBCF;
+  --font-display: "Noto Serif KR", "Nanum Myeongjo", "Apple SD Gothic Neo", serif;
+  --font-quote: "Newsreader", Georgia, "Times New Roman", serif;
+  --font-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121212; --surface: #1C1C1C; --ink: #EDEDED; --muted: #A0A0A0; --line: #333333;
+    --quote-bg: #262626; --accent: #FF5C9A; --accent-ink: #1A0A12; --ok: #CFCFCF; --ok-bg: #2A2A2A;
+    --warn: #F0B48F; --warn-bg: #3A2517; --interp: #E8BC52; --interp-bg: #33290F; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121212; --surface: #1C1C1C; --ink: #EDEDED; --muted: #A0A0A0; --line: #333333;
+  --quote-bg: #262626; --accent: #FF5C9A; --accent-ink: #1A0A12; --ok: #CFCFCF; --ok-bg: #2A2A2A;
+  --warn: #F0B48F; --warn-bg: #3A2517; --interp: #E8BC52; --interp-bg: #33290F; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--font-body); font-size: 15px; line-height: 1.75;
+  -webkit-text-size-adjust: 100%; word-break: keep-all; overflow-wrap: break-word;
+}
+a { color: var(--accent); text-underline-offset: 3px; }
+button { font: inherit; }
+a:focus-visible, button:focus-visible, textarea:focus-visible, .deck:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.app { max-width: 440px; height: 100dvh; margin: 0 auto; display: flex; flex-direction: column; position: relative; background: var(--bg);
+  padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }
+.view { display: none; flex: 1; min-height: 0; flex-direction: column; }
+.view.on { display: flex; }
+.scroll { overflow-y: auto; padding: 24px 16px 20px; display: flex; flex-direction: column; gap: 18px; flex: 1; min-height: 0; }
+.vh { display: flex; align-items: baseline; justify-content: space-between; padding: 0 4px; }
+.vh h1 { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 22px; line-height: 1.3; }
+.vh .d { font-family: var(--font-data); font-size: 14px; color: var(--muted); }
+
+.tabs { display: flex; flex: none; height: calc(68px + env(safe-area-inset-bottom, 0px)); padding-bottom: env(safe-area-inset-bottom, 0px); background: var(--surface); border-top: 1px solid var(--line); }
+.tab { flex: 1; appearance: none; border: 0; background: none; color: var(--muted); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 44px; font-size: 13.5px; cursor: pointer; }
+.tab[aria-current="page"] { color: var(--accent); font-weight: 600; }
+.app[data-view="read"] .tabs { display: none; }
+
+.hero { background: var(--ink); color: var(--bg); border-radius: 16px; padding: 24px 22px 22px; position: relative; overflow: hidden; display: flex; flex-direction: column; gap: 14px; }
+.hero > * { position: relative; }
+.hero > .art { position: absolute; left: 0; top: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+.hero > *:not(.art) { z-index: 1; }
+.kick { font-family: var(--font-data); font-size: 12.5px; letter-spacing: .18em; opacity: .8; }
+.en-title { font-family: var(--font-quote); font-style: italic; font-weight: 500; font-size: 33px; line-height: 1.12; letter-spacing: -.01em; max-width: 12ch; margin-top: 18px; }
+.ko-title { font-family: var(--font-display); font-weight: 700; font-size: 15px; line-height: 1.5; }
+.who { font-size: 14.5px; font-weight: 600; letter-spacing: .02em; }
+.pg { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
+.pg .bars { flex: 1; display: flex; gap: 3px; }
+.pg .bars i { flex: 1; height: 4px; border-radius: 2px; background: color-mix(in srgb, currentColor 25%, transparent); }
+.pg .bars i.f { background: var(--accent); }
+.pg span { font-family: var(--font-data); font-size: 13.5px; opacity: .85; }
+.cta { appearance: none; border: 0; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; border-radius: 999px; background: var(--accent); color: var(--accent-ink); font-weight: 600; font-size: 15px; cursor: pointer; width: 100%; }
+.sec { font-family: var(--font-data); font-size: 12.5px; letter-spacing: .16em; color: var(--muted); padding: 0 4px; }
+.rows { display: flex; flex-direction: column; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 4px; border-top: 1px solid var(--line); }
+.row:last-child { border-bottom: 1px solid var(--line); }
+.row .t { font-weight: 600; font-size: 15px; display: block; }
+.row .s { font-size: 14px; color: var(--muted); display: block; }
+
+
+.stack { position: relative; flex: 1; min-height: 0; overflow-y: auto; scroll-snap-type: y mandatory; scrollbar-width: none; overscroll-behavior: contain; padding-inline: 14px; display: flex; flex-direction: column; gap: 14px; }
+.stack::-webkit-scrollbar { display: none; }
+.stack .ibox { border-radius: 22px; transition: box-shadow .25s ease; background: #000000; color: #F0F0F0; --bg: #F0F0F0; --ink: #000000; --accent: #D61F69; --accent-ink: #FFFFFF; }
+.stack .ibox.focus { box-shadow: 0 0 0 1.5px #FF3D9A, 0 0 10px 1px rgba(255,61,154,.75), 0 0 26px 4px rgba(255,61,154,.4); }
+.ibox { flex: none; height: 372px; scroll-snap-align: center; scroll-snap-stop: always; will-change: transform, opacity; transform-origin: center; }
+.ibox.today { height: 558px; }
+.ibox .en-title { margin-top: auto; font-size: 30px; }
+.ibox.today .en-title { font-size: 32px; max-width: 16ch; }
+.ibox.sm .en-title { font-size: 21px; max-width: 20ch; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.ibox .ko-title { margin-top: 0; }
+.ibox .cta { margin-top: 4px; }
+
+.chipbar { display: flex; gap: 8px; }
+.fchip { appearance: none; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; min-height: 36px; padding: 0 16px; font-size: 15px; cursor: pointer; }
+.fchip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.issue { appearance: none; text-align: left; width: 100%; display: flex; gap: 14px; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 12px; padding: 14px; cursor: pointer; }
+.thumb { flex: none; width: 76px; height: 100px; border-radius: 8px; background: var(--ink); color: var(--bg); position: relative; overflow: hidden; display: flex; align-items: flex-end; padding: 8px; }
+.thumb em { position: relative; font-family: var(--font-quote); font-size: 14.5px; line-height: 1.1; }
+.ib { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.ib .top { display: flex; align-items: center; justify-content: space-between; }
+.ib .dt { font-family: var(--font-data); font-size: 13.5px; color: var(--accent); font-weight: 500; }
+.badge { font-size: 13px; font-weight: 600; padding: 1px 8px; border-radius: 3px; background: var(--interp-bg); color: var(--interp); }
+.badge.done { background: var(--ok-bg); color: var(--ok); }
+.ib .tt { font-family: var(--font-display); font-weight: 700; font-size: 15.5px; line-height: 1.45; }
+.ib .by { font-size: 14px; color: var(--muted); }
+.ib .bar { margin-top: auto; display: flex; align-items: center; gap: 8px; }
+.ib .bar i { flex: 1; height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; display: block; }
+.ib .bar b { display: block; height: 4px; background: var(--accent); }
+.ib .bar span { font-family: var(--font-data); font-size: 13.5px; color: var(--muted); }
+.empty { padding: 28px 8px; text-align: center; color: var(--muted); font-size: 15.5px; }
+
+.note { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+.note .q { font-family: var(--font-display); font-weight: 700; font-size: 17px; line-height: 1.55; margin: 0; }
+.note .body { min-height: 96px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; font-size: 16px; line-height: 1.7; white-space: pre-wrap; }
+.note .body.ph { color: var(--muted); }
+.note .stance { display: flex; gap: 8px; }
+.note .stance span { border: 1px solid var(--line); background: var(--bg); border-radius: 999px; min-height: 36px; padding: 0 14px; font-size: 15px; display: inline-flex; align-items: center; }
+.note .stance span.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.note .go { align-self: flex-end; appearance: none; border: 0; background: none; color: var(--accent); font-weight: 600; font-size: 15px; min-height: 44px; cursor: pointer; }
+
+/* reader */
+#v-read { padding: 14px 16px 0; }
+.wrap { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 12px; }
+.head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.back { appearance: none; border: 0; background: none; color: var(--ink); width: 44px; height: 44px; margin-left: -10px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.ctrls { display: flex; gap: 6px; }
+.mode { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; background: var(--surface); }
+.mode button { appearance: none; border: 0; background: none; color: var(--muted); padding: 0 12px; min-height: 36px; cursor: pointer; font-size: 14px; }
+.mode button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.segs { display: flex; gap: 4px; }
+.seg { flex: 1; height: 22px; padding: 0; appearance: none; border: 0; background: none; cursor: pointer; display: flex; align-items: center; }
+.seg i { display: block; width: 100%; height: 4px; border-radius: 2px; background: var(--line); transition: background .2s; }
+.seg.on i { background: var(--accent); }
+.seg.cur i { height: 6px; }
+.deck { flex: 1; min-height: 0; display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
+.deck::-webkit-scrollbar { display: none; }
+.card { flex: 0 0 100%; min-width: 0; scroll-snap-align: center; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; }
+.meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.meta .no { font-family: var(--font-data); font-size: 14px; color: var(--accent); font-weight: 500; }
+.meta .ttl { font-size: 13.5px; letter-spacing: .1em; font-weight: 600; color: var(--muted); }
+.meta .stage { margin-left: auto; font-size: 13px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 0 9px; }
+.bridge { margin: 0; font-size: 15px; color: var(--muted); border-left: 3px solid var(--accent); padding-left: 10px; max-width: 60ch; }
+.orig { background: var(--quote-bg); border-radius: 8px; padding: 16px 16px 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.orig .lab { font-family: var(--font-data); font-size: 12.5px; letter-spacing: .14em; color: var(--muted); margin: 0; }
+.orig .q { font-family: var(--font-quote); font-style: italic; font-weight: 500; font-size: clamp(20px, 5.2vw, 24px); line-height: 1.38; margin: 0; overflow-wrap: anywhere; text-wrap: balance; }
+.orig .by { font-size: 14px; color: var(--muted); margin: 0; }
+.orig .ko { margin: 0; padding-top: 10px; border-top: 1px solid var(--line); font-weight: 600; font-size: 16px; line-height: 1.6; text-wrap: balance; }
+.terms { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; font-size: 15px; }
+.terms li { display: flex; flex-wrap: wrap; gap: 2px 8px; }
+.terms b { font-family: var(--font-quote); font-style: italic; font-weight: 500; font-size: 15px; }
+.expl { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.expl p { margin: 0; max-width: 60ch; }
+.lab2 { font-weight: 600; letter-spacing: .12em; font-size: 13.5px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
+.lab2 small { font-weight: 400; letter-spacing: 0; font-size: 13.5px; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px 8px; }
+.tag { font-size: 13px; font-weight: 600; letter-spacing: .03em; padding: 1px 8px; border-radius: 3px; background: var(--ok-bg); color: var(--ok); }
+.tag.warn { background: var(--warn-bg); color: var(--warn); }
+.interp { background: var(--interp-bg); border-radius: 8px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.interp .lab2 { color: var(--interp); }
+.interp p { margin: 0; max-width: 60ch; }
+.wrap[data-interp="off"] .interp { display: none; }
+.nextlead { margin: 0; font-size: 15px; color: var(--muted); text-align: right; max-width: 60ch; align-self: flex-end; }
+.nextlead b { color: var(--accent); font-weight: 600; }
+.cover-q { font-family: var(--font-display); font-weight: 700; font-size: clamp(24px, 6.2vw, 32px); line-height: 1.4; letter-spacing: -.01em; margin: 0; text-wrap: balance; }
+.card.cover { background: #000000; color: #F0F0F0; --accent: #FF5C9A; border-color: #000000; padding: 26px 22px 20px; gap: 18px; justify-content: space-between; position: relative; overflow-x: hidden; }
+.card.cover > * { position: relative; }
+.card.cover > .art { position: absolute; left: 0; top: 0; width: 100%; height: 340px; pointer-events: none; }
+.cv-kick { margin: 0; font-family: var(--font-data); font-size: 13px; letter-spacing: .18em; opacity: .75; }
+.cv-title { margin: 190px 0 0; font-family: var(--font-quote); font-style: italic; font-weight: 500; font-size: clamp(32px, 9vw, 42px); line-height: 1.12; letter-spacing: -.01em; text-wrap: balance; max-width: 15ch; }
+.cv-ko { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 17px; line-height: 1.5; }
+.cv-who { margin: 0; font-size: 15px; }
+.cv-who b { font-weight: 600; letter-spacing: .02em; }
+.cv-q { margin: 4px 0 0; padding: 12px 0; border-top: 1px solid color-mix(in srgb, currentColor 30%, transparent); border-bottom: 1px solid color-mix(in srgb, currentColor 30%, transparent); font-family: var(--font-display); font-weight: 600; font-size: 15.5px; line-height: 1.6; text-wrap: balance; }
+.flow { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; }
+.flow li { display: grid; grid-template-columns: 26px 1fr; gap: 0 8px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 15.5px; }
+.flow li:first-child { border-top: 0; }
+.flow .n { font-family: var(--font-data); font-size: 14px; color: var(--accent); padding-top: 2px; }
+.flow .t { font-weight: 600; }
+.flow .d { font-size: 14.5px; grid-column: 2; }
+.card.cover .flow li { border-top-color: color-mix(in srgb, currentColor 22%, transparent); }
+.card.cover .flow .d { opacity: .7; }
+.cv-hint { margin: 0; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 14px; }
+.cv-hint a { color: inherit; }
+.cv-hint span { opacity: .75; }
+.wrap[data-mode="ko"] .orig .q, .wrap[data-mode="ko"] .orig .lab { display: none; }
+.wrap[data-mode="ko"] .orig .ko { border-top: 0; padding-top: 0; }
+.nav { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 4px 0 calc(14px + env(safe-area-inset-bottom, 0px)); }
+.nav button.step { appearance: none; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 999px; min-height: 44px; padding: 0 18px; cursor: pointer; }
+.nav button.step:disabled { opacity: .35; cursor: default; }
+.nav .count { font-family: var(--font-data); font-size: 14.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { appearance: none; background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 999px; min-height: 36px; padding: 0 14px; cursor: pointer; font-size: 15px; }
+.chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+.saved { font-size: 14px; color: var(--muted); min-height: 1.4em; }
+@media (prefers-reduced-motion: reduce) { .seg i { transition: none; } }
+</style>
+
+<div class="app" id="app" data-view="home">
+
+  <section class="view on" id="v-home" aria-label="오늘">
+    <div class="vh" style="padding: 24px 20px 8px;"><h1>오늘의 트레일</h1><span class="d" id="today"></span></div>
+    <div class="stack" id="stack" tabindex="0" aria-label="호 목록. 위아래로 넘깁니다.">
+
+      <article class="hero ibox sm" data-i="0" aria-label="이전 호">
+        <div class="kick">PREVIOUS</div>
+        <div class="en-title" lang="en" style="margin-top:auto">No earlier issue</div>
+        <div class="ko-title">이전 호가 없습니다</div>
+        <div class="who">첫 호입니다</div>
+      </article>
+
+      <article class="hero ibox today" data-i="1" aria-label="오늘 호">
+        <canvas class="art" data-art="today" aria-hidden="true"></canvas>
+        <div class="kick">TRAIL RUNNING · PODCAST</div>
+        <div class="en-title" lang="en">Logic, Pain, and the Reality of Ultra Running</div>
+        <div class="ko-title">논리, 고통, 그리고 울트라 러닝의 현실</div>
+        <div class="who">Francesco Puppi</div>
+        <div class="pg" id="hero-pg" hidden><div class="bars" id="hero-bars"></div><span id="hero-count"></span></div>
+        <button type="button" class="cta" id="hero-cta"><span id="hero-cta-t">읽기</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+      </article>
+
+      <article class="hero ibox sm" data-i="2" aria-label="다음 호 후보">
+        <canvas class="art" data-art="c1" aria-hidden="true"></canvas>
+        <div class="kick">NEXT · 후보</div>
+        <div class="en-title" lang="en">Courtney Dauwalter: Mindset Secrets From The World's Best Ultrarunner</div>
+        <div class="ko-title">코트니 도월터: 세계 최고 울트라 러너의 마인드셋</div>
+        <div class="who">Rich Roll Podcast #618</div>
+      </article>
+
+      <article class="hero ibox sm" data-i="3" aria-label="다음 호 후보">
+        <canvas class="art" data-art="c2" aria-hidden="true"></canvas>
+        <div class="kick">NEXT · 후보</div>
+        <div class="en-title" lang="en">The Interview: Kílian Jornet on What We Can Learn From Pushing Our Bodies to Extremes</div>
+        <div class="ko-title">킬리안 조르넷: 몸을 극한까지 밀어붙여 배울 수 있는 것</div>
+        <div class="who">NYT The Interview · 43분</div>
+      </article>
+
+      <article class="hero ibox sm" data-i="4" aria-label="다음 호 후보">
+        <canvas class="art" data-art="c3" aria-hidden="true"></canvas>
+        <div class="kick">NEXT · 후보</div>
+        <div class="en-title" lang="en">Why Ultrarunning Feels Necessary</div>
+        <div class="ko-title">울트라 러닝이 필요하게 느껴지는 이유</div>
+        <div class="who">Borderlands #295 · 21분</div>
+      </article>
+    </div>
+  </section>
+
+  <section class="view" id="v-archive" aria-label="지난 호">
+    <div class="scroll">
+      <div class="vh"><h1>지난 호</h1></div>
+      <div class="chipbar" role="group" aria-label="필터">
+        <button type="button" class="fchip" data-f="all" aria-pressed="true">전체</button>
+        <button type="button" class="fchip" data-f="ing" aria-pressed="false">읽는 중</button>
+        <button type="button" class="fchip" data-f="done" aria-pressed="false">완료</button>
+      </div>
+      <div class="sec">2026.10</div>
+      <div id="issues"></div>
+    </div>
+  </section>
+
+  <section class="view" id="v-notes" aria-label="내 메모">
+    <div class="scroll">
+      <div class="vh"><h1>내 메모</h1></div>
+      <div class="sec">10.23 · FRANCESCO PUPPI</div>
+      <div class="note">
+        <p class="q">내가 마지막으로 힘들었던 러닝에서, 나는 고통과 어떻게 협상했나?</p>
+        <div class="stance"><span id="st-agree">동의하는 원칙</span><span id="st-doubt">의문이 드는 점</span></div>
+        <div class="body ph" id="note-body">아직 메모가 없습니다.</div>
+        <button type="button" class="go" id="note-go">카드에서 쓰기 →</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" id="v-read" aria-label="카드 읽기">
+    <div class="wrap" id="wrap" data-mode="both" data-interp="on">
+      <div class="head">
+        <button type="button" class="back" id="back" aria-label="홈으로">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>
+        <div class="ctrls">
+          <div class="mode" role="group" aria-label="영문 원문 보기">
+            <button type="button" id="m-both" aria-pressed="true">영문</button>
+            <button type="button" id="m-ko" aria-pressed="false">숨김</button>
+          </div>
+          <div class="mode" role="group" aria-label="해석 보기">
+            <button type="button" id="i-on" aria-pressed="true">해석</button>
+            <button type="button" id="i-off" aria-pressed="false">숨김</button>
+          </div>
+        </div>
+      </div>
+      <div class="segs" id="segs" role="group" aria-label="카드 위치"></div>
+      <div class="deck" id="deck" tabindex="0" aria-label="카드 덱. 좌우 방향키나 밀어서 넘깁니다."></div>
+      <div class="nav">
+        <button type="button" class="step" id="prev">← 이전</button>
+        <span class="count" id="count"></span>
+        <button type="button" class="step" id="next">다음 →</button>
+      </div>
+    </div>
+  </section>
+
+  <nav class="tabs" aria-label="하단 메뉴">
+    <button type="button" class="tab" data-go="home" aria-current="page">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 19l6-10 4 6 2-3 6 7z"/><circle cx="17" cy="6" r="1.6"/></svg><span>오늘</span></button>
+    <button type="button" class="tab" data-go="archive">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="5" rx="1"/><rect x="4" y="11" width="16" height="5" rx="1"/><path d="M4 19h16"/></svg><span>지난 호</span></button>
+    <button type="button" class="tab" data-go="notes">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M14 7l3 3"/></svg><span>내 메모</span></button>
+  </nav>
+</div>
+
+<script>
+(function () {
+  var EP = "https://www.podbean.com/ew/dir-s722k-2f5f4746";
+  var LK = "에피소드 페이지";
+  var cards = [
+    {
+      cover: true,
+      title: "표지",
+      en: "Logic, Pain, and the Reality of Ultra Running",
+      ko: "논리, 고통, 그리고 울트라 러닝의 현실",
+      who: "Francesco Puppi",
+      url: EP,
+      question: "100마일의 고통을 영웅담이 아니라 논리로 바라보면 무엇이 보일까?",
+      flow: [
+        ["깊이 들어간다는 것", "going mental이 무슨 뜻인지에서 출발합니다."],
+        ["가장 깊은 순간", "웨스턴 스테이츠 선두에서 울었던 때, 그 고통을 버티게 한 이유와 방법입니다."],
+        ["고통의 정체와 태도", "고통이 무엇인지, 고통을 대하는 태도가 어떻게 바뀌었는지입니다."],
+        ["사회의 서사와 결론", "고난을 찬양하는 서사에 대한 생각과 푸피가 내린 결론입니다."],
+        ["남는 것", "고통이 지나간 뒤에 무엇을 기억하려 하는지입니다."]
+      ]
+    },
+    {
+      stage: "출발", title: "Going mental",
+      bridge: "이 대화의 이름이자 푸피가 가장 먼저 답한 질문입니다.",
+      orig: { text: "trying to go beyond the surface level narrative that many times we tell ourselves", by: "푸피 · 03:27", url: EP, link: LK },
+      ko: "스스로에게 자주 들려주는 겉핥기식 이야기 너머로 가 보려는 것.",
+      terms: [["going mental", "이 팟캐스트의 이름. 푸피의 뜻풀이는 ‘하는 일 속으로 더 깊이 들어가기’입니다."]],
+      expl: [
+        "저에게 going mental(더 깊이 들어가기)은 달리기든 다른 일이든 지금 하는 일 속으로 더 깊이 들어가 보려는 것입니다. 우리가 스스로에게 들려주고 남들에게서도 듣는 겉핥기식 이야기 너머로 가서, 운동선수로 산다는 것, 목표를 위해 일하고 높은 수준으로 훈련한다는 것이 어떤 일인지 뿌리까지 보려는 것입니다.",
+        "거기에는 큰 가능성이 있다고 생각합니다. 제 안에 아직 쓰지 않은 가능성에 닿을 수 있기 때문입니다. 다만 그러려면 강점뿐 아니라 두려움과 약점, 더 깊은 감정까지 마주해야 하고, 그걸 해내면 정말 강력합니다."
+      ],
+      tags: ["전사 확인함"],
+      nextlead: "그렇다면 가장 깊이 들어간 순간은 어땠을까요? 웨스턴 스테이츠 100에서의 장면으로 갑니다."
+    },
+    {
+      stage: "가장 깊은 순간", title: "협상",
+      bridge: "깊이 들어간다는 말이 가장 극단으로 간 장면입니다.",
+      orig: { text: "[ultra] running is a negotiation with yourself and with pain", by: "푸피 · 38:45 (00:14 예고편에도 나옴). 전사에서 ultra가 ‘called’로 인식되어 [ ]로 보완했습니다.", url: EP, link: LK },
+      ko: "울트라 러닝은 나 자신, 그리고 고통과 벌이는 협상이다.",
+      terms: [
+        ["ultra running", "42.195km보다 긴 거리를 달리는 경기. 여기서는 100마일(약 161km)입니다."],
+        ["aid station", "경기 중간의 보급 지점. 선수가 먹고 마시고 크루를 만나는 곳입니다."],
+        ["pain cave", "고통의 동굴. 고통이 가장 깊어진 상태를 부르는 말입니다."]
+      ],
+      expl: [
+        "웨스턴 스테이츠 100(진행자의 표현으로는 가장 크고 역사적인 100마일 대회)에서 선두로 달리다 보급 지점(aid station)에 들어서며 울었습니다. 왜 그랬는지 저도 잘 모릅니다. 솔직히 절박했습니다. 혼자서는 다루는 법을 모르는 어렵고 불편한 상황에 제가 저를 밀어 넣었고, 같은 속도로 계속 나아가는 게 정신적으로 불가능하게 느껴졌습니다. 너무 지쳤고 많이 아팠고, 고통은 어느 순간 거의 견딜 수 없게 됩니다.",
+        "그래서 저는 울트라 러닝을 나 자신, 그리고 고통과 벌이는 협상이라고 생각합니다. 성공하려면 그 고통의 동굴(pain cave)을 기꺼이 탐험할 수 있어야 합니다. 적어도 저에게는 그렇습니다. 일 년에 며칠, 특별한 날에만 제 안의 큰 잠재력으로 아주 깊이 파고들 수 있다는 걸 알고, 그것에 많이 기댑니다. 결승선에 들어온 뒤에는 몇 시간 동안 걷지 못해서 휠체어로 이송됐습니다."
+      ],
+      interp: [
+        "협상은 한쪽이 이기는 일이 아니라 서로 양보해서 접점을 찾는 일입니다. 푸피는 고통을 없애자는 게 아니라, 고통과 어디까지 가는지를 정하는 일로 말한다고 읽힙니다."
+      ],
+      tags: ["전사 확인함", "ultra는 문맥으로 보완"],
+      nextlead: "그 협상이 결렬되지 않게 붙들어 준 것은 무엇이었을까요? 먼저 ‘이유’입니다."
+    },
+    {
+      stage: "가장 깊은 순간", title: "왜 하는가",
+      bridge: "협상이 거의 결렬될 때, 첫 번째로 붙드는 것은 이유입니다.",
+      orig: { text: "ask yourself why you're doing what you're doing", by: "푸피 · 14:02", url: EP, link: LK },
+      ko: "내가 왜 이 일을 하고 있는지 스스로에게 물어보라.",
+      terms: [["fun / fulfillment", "fun은 재미, fulfillment는 해냈다는 충족감. 푸피는 100마일에서 필요한 건 재미가 아니라 충족감이라고 구분합니다."]],
+      expl: [
+        "솔직히 훈련이나 100마일 달리기가 재미있다(fun)고 말하기는 어렵습니다. 큰 고통과 큰 노력이 들기 때문입니다. 웨스턴 스테이츠 도중에 코치가 즐겁냐고 물었을 때 저는 대답하지 못했습니다. 코치의 뜻은 저를 이 대회를 선택한 이유로 되돌려 놓는 것이었다고 생각합니다. 그때는 80마일쯤이었고, 정말 아프고 힘들 때였습니다.",
+        "그래서 스스로 왜 하는지 묻는 게 매우 중요합니다. 그 질문에 답할 수 있다면, 기쁨과 충족감(fulfillment)은 거기서 옵니다. 제가 말하는 기쁨은 환호가 아니라, 내가 요구한 일을 해내고 지친 데서 오는 충족감입니다. 저에게 100마일은 제가 선택한 특권이고, 저 혼자의 노력이 아니라 곁에서 희생해 준 사람들과 함께한 팀의 노력이기도 합니다."
+      ],
+      tags: ["전사 확인함"],
+      nextlead: "이유가 있어도 남은 거리는 막막합니다. 실제로는 어떻게 갔을까요?"
+    },
+    {
+      stage: "가장 깊은 순간", title: "쪼개기",
+      bridge: "이유가 마음을 붙든다면, 쪼개기는 다리를 움직이는 방법입니다.",
+      orig: { text: "it really helps you break the race into smaller chunks", by: "푸피 · 36:40", url: EP, link: LK },
+      ko: "(크루는) 레이스를 더 작은 덩어리로 나누게 도와준다.",
+      terms: [["crew", "선수를 따라다니며 도와주는 지원팀. 대회에서는 정해진 보급 지점에서만 만날 수 있습니다."]],
+      expl: [
+        "크루의 역할은 아주 중요합니다. 정신적으로 레이스를 작은 덩어리로 나누게 해 주기 때문입니다. 크루는 보급 지점에서만 볼 수 있어서, 저는 ‘다음 보급 지점까지만 가자’고 스스로에게 말합니다.",
+        "100마일을 달린다는 건 거의 불가능하게 느껴집니다. 100km 지점에서 60km가 남았다면 그 거리를 어떻게 갈지 도무지 모르겠습니다. 그래서 다음 보급 지점에서 크루를 만나는 것만 보고 가고, 그다음은 그때 가서 해결합니다. 믿고 존중하는 사람을 만나면 자신감과 에너지도 얻습니다."
+      ],
+      tags: ["전사 확인함"],
+      nextlead: "이렇게 버티는 동안 제가 겪는 ‘고통’이란 정확히 무엇일까요?"
+    },
+    {
+      stage: "고통의 정체", title: "고통이란",
+      bridge: "진행자가 물었습니다. 고통은 대가인지, 증명인지, 스승인지.",
+      orig: { text: "The way you perceive and feel the pain is also crucial.", by: "푸피 · 40:09", url: EP, link: LK },
+      ko: "고통을 어떻게 인식하고 느끼는지도 결정적이다.",
+      terms: [["multifactorial", "여러 요인이 함께 작용한다는 뜻. 푸피는 고통이 신체적 원인만으로 정해지지 않는다는 의미로 씁니다."]],
+      expl: [
+        "고통이 무엇이냐는 질문에는 정의를 내리기가 어렵습니다. 고통은 여러 요인이 함께 만드는 것이라 신체적 원인만 있는 게 아니고, 제가 그것을 어떻게 인식하고 느끼는지도 결정적입니다. 고통에도 여러 ‘맛’(flavors)이 있어서, 800m 경기나 철인3종의 고통은 100마일의 고통과 다릅니다. 선수 생활 동안 여러 종류의 고통을 탐구해 봤고, 모두 아주 다릅니다.",
+        "큰 고통은 불편합니다. 그 불편한 상황을 기꺼이 지나가야 하고, 해내지 못할 수도 있다는 두려움과 마주해야 합니다. 흥미로운 건 고통이 제 성격과 감정을 드러낸다는 점입니다. 어려운 상황에서, 특히 큰 고통 아래에서 내가 어떤 사람인지 진짜로 알게 됩니다. 상황이 쉽고 통제할 수 있을 때는 결정이 쉽지만, 큰 고통 속에서는 훨씬 어렵습니다."
+      ],
+      tags: ["전사 확인함"],
+      nextlead: "이 고통은 처음엔 ‘증명’이었고, 시간이 지나 ‘스승’이 됐습니다. 그 변화가 다음 카드입니다."
+    },
+    {
+      stage: "고통의 정체", title: "존중",
+      bridge: "고통이 스승이 되자, 고통을 대하는 태도가 바뀌었습니다.",
+      orig: { text: "all for respecting my limits and my body", by: "푸피 · 43:00", url: EP, link: LK },
+      ko: "나는 한계와 내 몸을 존중하는 쪽에 전적으로 선다.",
+      terms: [
+        ["no pain, no gain", "고통 없이는 얻는 것도 없다. 고통을 감수해야 성과가 난다는 통념입니다."],
+        ["proof / teacher", "증명 / 스승. 고통이 푸피에게 어떤 의미였는지를 시기별로 가른 말입니다."]
+      ],
+      expl: [
+        "경력 초기에 고통은 저에게 증명(proof)이었습니다. 제가 독하게 버티고 고통을 감당할 수 있다는 증명입니다. 나이가 들수록 고통은 스승(teacher)이 됐습니다. 발이나 아킬레스건에서 오는 잘못된 고통을 존중하지 않으면 훨씬 큰 교훈을 얻게 되기 때문입니다. 경험이 쌓이면서 저는 고통을 존중하게 됐고, 고통에도 종류가 있으며, 늘 그 속으로 파고들 필요는 없고, 건강한 고통과 그렇지 않은 고통을 구분해야 한다는 걸 알게 됐습니다.",
+        "그래서 저는 ‘no pain, no gain’ 같은 서사에 힘을 보태고 싶지 않습니다. 제가 서는 자리는 정반대입니다. 웨스턴 스테이츠 결승선에서 휠체어로 실려 나갔다고 몸이나 한계를 존중하지 않았다는 뜻이 아닙니다. 오히려 모든 것을 쏟았고 그것이 자랑스럽습니다. 그 성과는 밀어붙여서가 아니라, 제 한계와 제가 겪던 고통과 불편함을 이해한 데서 나왔습니다."
+      ],
+      interp: [
+        "‘한계를 존중한다’는 말을 일찍 멈춘다는 뜻으로 읽기 쉽습니다. 푸피의 설명에서는 한계를 정확히 알아서 그 끝까지 간다는 뜻에 가깝다고 읽힙니다."
+      ],
+      tags: ["전사 확인함"],
+      nextlead: "그런데 사회는 이런 태도를 어떻게 바라볼까요? 진행자가 푸피의 글을 꺼냅니다."
+    },
+    {
+      stage: "사회의 서사", title: "멈춤의 명료함",
+      bridge: "개인의 태도가 사회의 이야기와 부딪히는 지점입니다.",
+      orig: { text: "refuse to appreciate the lucidity of stopping", by: "푸피가 쓴 글을 진행자가 인용 · 44:17", url: EP, link: LK },
+      ko: "(우리는) 멈추는 것의 명료함은 인정하려 하지 않는다.",
+      terms: [["lucidity", "맑고 분명한 판단력. ‘멈추는 것도 흐리멍덩한 포기가 아니라 분명한 판단일 수 있다’는 뜻으로 쓰였습니다."]],
+      expl: [
+        "진행자가 제가 쓴 글을 인용했습니다. 우리 사회는 지구력 스포츠와 고난을 이겨내는 것을 찬양하면서, 멈추는 것의 명료함은 인정하려 하지 않는다는 내용입니다.",
+        "저도 가끔 이 희생이 그만한 가치가 있는지 스스로 묻지만 답하지 못합니다. 성취가 준비 과정에서 겪은 고통과 부정적인 감정, 희생을 상쇄해 준다고는 생각하지 않습니다. 그러니 과정을 최대한 즐겁고 재미있게 만드는 편이 낫다고 봅니다. 이것은 대화 처음에 이야기한 서사, 곧 고난과 영웅적 노력과 고통을 찬양하고 감정과 약점을 감추는 것을 높이 사는 지구력 스포츠의 서사와 이어집니다."
+      ],
+      interp: [
+        "푸피는 멈춤을 약함이 아니라 판단으로 본다고 읽힙니다. 앞 카드의 ‘한계 존중’이 개인의 태도였다면, 이 카드는 그것이 사회의 이야기와 어떻게 다른지를 보여 줍니다."
+      ],
+      tags: ["전사 확인함"],
+      nextlead: "그렇다면 푸피가 찾은 대안은 무엇일까요? 결론입니다."
+    },
+    {
+      stage: "결론", title: "참고 기다리기",
+      bridge: "고난을 찬양하는 서사에 대한 푸피의 답입니다.",
+      orig: { text: "learning to hold back and being patient and respecting my body", by: "푸피 · 46:18", url: EP, link: LK },
+      ko: "참고, 인내하고, 내 몸을 존중하는 법을 배우는 것.",
+      terms: [["hold back", "힘을 아끼고 참다. 더 하고 싶은 마음을 눌러 절제하는 것입니다."]],
+      expl: [
+        "제가 하는 일에서 더 성공한 건 더 열심히 해서가 아닙니다. 참고(hold back) 인내하고 제 몸을 존중하는 법을 배워서입니다. 직관에 반하지만 이것이 현실입니다.",
+        "10~15년 전에는 스포츠, 특히 달리기와의 관계가 지금만큼 좋지 않았습니다. 지금은 회복의 중요성과 몸을 존중하는 법을 이해하고, 조금 더 현명해졌습니다."
+      ],
+      tags: ["전사 확인함"],
+      nextlead: "마지막으로, 이 모든 고통이 지나간 뒤에 무엇을 기억하려 하는지 묻습니다."
+    },
+    {
+      stage: "남는 것", title: "잊히는 고통",
+      bridge: "진행자의 마지막 질문, ‘마지막으로 going mental 한 게 언제입니까’에서 이어집니다.",
+      orig: { text: "remind myself that it was real and it was uncomfortable", by: "푸피 · 00:01:02 예고편 구간 (본편 01:00:50의 같은 발언은 인식이 흐립니다)", url: EP, link: LK },
+      ko: "그것이 실제였고 불편했다는 것을 스스로 떠올리고 싶다.",
+      terms: [["credit", "공을 인정함. 여기서는 스스로에게 ‘해냈다’고 인정해 주는 것입니다."]],
+      expl: [
+        "마지막으로 going mental(더 깊이 들어가기) 했던 때는 웨스턴 스테이츠 중이었습니다. 머릿속과 제 생각 속에서 많은 시간을 보냈고, 정말 힘들었습니다.",
+        "레이스가 끝나면 고통과 불편을 놀랄 만큼 쉽게 잊습니다. 그래도 그것이 실제였고 불편했다는 사실을 떠올리고 싶습니다. 왜냐고 물으시면, 제가 해낸 일을 스스로 인정해 주기(give myself credit) 위해서입니다. 정말 힘들었으니까요. 달리 표현할 말이 없습니다."
+      ],
+      interp: [
+        "고통을 일부러 기억하는 것은 처음의 ‘겉핥기식 이야기’로 돌아가지 않겠다는 선택으로도 읽힙니다. 다만 푸피 본인이 밝힌 이유는 자신을 인정해 주기 위해서입니다."
+      ],
+      tags: ["전사 확인함"],
+      nextlead: "여기까지가 푸피의 이야기입니다. 이제 당신의 차례입니다."
+    },
+    { title: "내 생각", memo: true }
+  ];
+
+  var N = cards.length;
+  var PKEY = "trailapp-progress-v1";
+  var MKEY = "trailcard-puppi-v1";
+  var app = document.getElementById("app");
+  var deck = document.getElementById("deck");
+  var segsEl = document.getElementById("segs");
+  var countEl = document.getElementById("count");
+  var prev = document.getElementById("prev");
+  var next = document.getElementById("next");
+  var wrap = document.getElementById("wrap");
+  var GAP = 12;
+  var cur = 0;
+  var prog = { max: -1, last: 0 };
+
+  try { var pr = JSON.parse(localStorage.getItem(PKEY) || "null"); if (pr) { prog.max = pr.max; prog.last = pr.last; } } catch (e) {}
+  function saveProg() { try { localStorage.setItem(PKEY, JSON.stringify(prog)); } catch (e) {} }
+
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  function link(url, text) { return '<a href="' + url + '" target="_blank" rel="noopener">' + text + ' ↗</a>'; }
+  function paras(arr) { return arr.map(function (p) { return '<p>' + p + '</p>'; }).join(""); }
+
+  /* ---------- reader: cards ---------- */
+  cards.forEach(function (c, i) {
+    var el = document.createElement("article");
+    el.className = "card";
+    el.setAttribute("aria-label", (i + 1) + "번째 카드, 전체 " + N + "장");
+
+    if (c.cover) {
+      el.className = "card cover";
+      el.setAttribute("aria-label", "표지");
+      el.innerHTML =
+        '<canvas class="art" id="art-cover" aria-hidden="true"></canvas>' +
+        '<p class="cv-kick">TRAIL RUNNING · PODCAST</p>' +
+        '<h2 class="cv-title" lang="en">' + c.en + '</h2>' +
+        '<p class="cv-ko">' + c.ko + '</p>' +
+        '<p class="cv-who"><b>' + c.who + '</b></p>' +
+        '<p class="cv-q">' + c.question + '</p>' +
+        '<ol class="flow">' + c.flow.map(function (f, k) {
+          return '<li><span class="n">' + (k + 1) + '</span><span class="t">' + f[0] + '</span><span class="d">' + f[1] + '</span></li>';
+        }).join("") + '</ol>' +
+        '<p class="cv-hint">' + link(c.url, "에피소드 페이지") + '<span>옆으로 넘겨 시작 →</span></p>';
+      deck.appendChild(el);
+      return;
+    }
+
+    var h = '<div class="meta"><span class="no">' + pad(i) + '</span><span class="ttl">' + c.title + '</span>' +
+      (c.stage ? '<span class="stage">' + c.stage + '</span>' : '') + '</div>';
+
+    if (c.memo) {
+      h += '<h2 class="cover-q" style="font-size:clamp(21px,5.4vw,26px)">내가 마지막으로 힘들었던 러닝에서, 나는 고통과 어떻게 협상했나?</h2>' +
+        '<div class="chips" role="group" aria-label="내 입장">' +
+        '<button type="button" class="chip" data-stance="agree" aria-pressed="false">동의하는 원칙</button>' +
+        '<button type="button" class="chip" data-stance="doubt" aria-pressed="false">의문이 드는 점</button></div>' +
+        '<textarea id="memo" placeholder="떠오른 생각을 적어 두세요."></textarea>' +
+        '<span class="saved" id="saved" aria-live="polite"></span>';
+      el.innerHTML = h;
+      deck.appendChild(el);
+      return;
+    }
+
+    if (c.bridge) h += '<p class="bridge">' + c.bridge + '</p>';
+    h += '<div class="orig"><p class="lab">ORIGINAL</p><p class="q" lang="en">' + c.orig.text + '</p>' +
+      '<p class="by">' + c.orig.by + ' · ' + link(c.orig.url, c.orig.link) + '</p>' +
+      '<p class="ko">' + c.ko + '</p></div>';
+    if (c.terms && c.terms.length) {
+      h += '<ul class="terms" aria-label="용어">' + c.terms.map(function (t) {
+        return '<li><b lang="en">' + t[0] + '</b><span>' + t[1] + '</span></li>';
+      }).join("") + '</ul>';
+    }
+    h += '<div class="expl"><div class="lab2">설명</div>' + paras(c.expl);
+    h += '<div class="tags">' + c.tags.map(function (t) {
+      var w = /불분명|보완/.test(t);
+      return '<span class="tag' + (w ? ' warn' : '') + '">' + t + '</span>';
+    }).join("") + '</div></div>';
+    if (c.interp) {
+      h += '<div class="interp"><div class="lab2">해석 <small>제 생각이며 원본에 없는 내용</small></div>' + paras(c.interp) + '</div>';
+    }
+    if (c.nextlead) h += '<p class="nextlead"><b>→</b> ' + c.nextlead + '</p>';
+    el.innerHTML = h;
+    deck.appendChild(el);
+  });
+
+  var segs = [];
+  cards.forEach(function (c, i) {
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "seg";
+    b.setAttribute("aria-label", (i + 1) + "번째 카드로 이동: " + c.title);
+    b.innerHTML = "<i></i>";
+    b.addEventListener("click", function () { go(i); });
+    segsEl.appendChild(b); segs.push(b);
+  });
+
+  function reduced() { return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches; }
+  function go(i, instant) {
+    i = Math.max(0, Math.min(N - 1, i));
+    deck.scrollTo({ left: i * (deck.clientWidth + GAP), behavior: (instant || reduced()) ? "auto" : "smooth" });
+    paint(i);
+  }
+  function paint(i) {
+    cur = i;
+    segs.forEach(function (b, k) {
+      b.classList.toggle("on", k <= i);
+      b.classList.toggle("cur", k === i);
+    });
+    countEl.textContent = (i + 1) + " / " + N;
+    prev.disabled = i === 0;
+    next.disabled = i === N - 1;
+    if (app.getAttribute("data-view") === "read") {
+      prog.last = i;
+      if (i > prog.max) prog.max = i;
+      saveProg();
+    }
+  }
+  deck.addEventListener("scroll", function () {
+    if (!deck.clientWidth) return;
+    var i = Math.round(deck.scrollLeft / (deck.clientWidth + GAP));
+    if (i !== cur) paint(Math.max(0, Math.min(N - 1, i)));
+  }, { passive: true });
+  window.addEventListener("resize", function () { if (app.getAttribute("data-view") === "read") deck.scrollLeft = cur * (deck.clientWidth + GAP); });
+  prev.addEventListener("click", function () { go(cur - 1); });
+  next.addEventListener("click", function () { go(cur + 1); });
+  deck.addEventListener("keydown", function (e) {
+    if (e.key === "ArrowRight") { e.preventDefault(); go(cur + 1); }
+    if (e.key === "ArrowLeft") { e.preventDefault(); go(cur - 1); }
+  });
+
+  var mBoth = document.getElementById("m-both"), mKo = document.getElementById("m-ko");
+  function setMode(m) {
+    wrap.setAttribute("data-mode", m);
+    mBoth.setAttribute("aria-pressed", m === "both" ? "true" : "false");
+    mKo.setAttribute("aria-pressed", m === "ko" ? "true" : "false");
+  }
+  mBoth.addEventListener("click", function () { setMode("both"); });
+  mKo.addEventListener("click", function () { setMode("ko"); });
+  var iOn = document.getElementById("i-on"), iOff = document.getElementById("i-off");
+  function setInterp(v) {
+    wrap.setAttribute("data-interp", v);
+    iOn.setAttribute("aria-pressed", v === "on" ? "true" : "false");
+    iOff.setAttribute("aria-pressed", v === "off" ? "true" : "false");
+  }
+  iOn.addEventListener("click", function () { setInterp("on"); });
+  iOff.addEventListener("click", function () { setInterp("off"); });
+
+  /* ---------- memo (shared with 내 메모 화면) ---------- */
+  var memo = document.getElementById("memo");
+  var saved = document.getElementById("saved");
+  var stanceBtns = Array.prototype.slice.call(document.querySelectorAll("[data-stance]"));
+  var state = { memo: "", stance: "" };
+  try {
+    var raw = localStorage.getItem(MKEY);
+    if (raw) { var o = JSON.parse(raw); state.memo = o.memo || ""; state.stance = o.stance || ""; }
+  } catch (e) {}
+  memo.value = state.memo;
+  function paintStance() {
+    stanceBtns.forEach(function (b) { b.setAttribute("aria-pressed", b.getAttribute("data-stance") === state.stance ? "true" : "false"); });
+  }
+  paintStance();
+  var timer = null;
+  function persist() {
+    var ok = true;
+    try { localStorage.setItem(MKEY, JSON.stringify(state)); } catch (e) { ok = false; }
+    saved.textContent = ok ? "이 브라우저에 저장했습니다." : "이 화면에서는 저장되지 않습니다. 창을 닫으면 사라집니다.";
+  }
+  memo.addEventListener("input", function () {
+    state.memo = memo.value; saved.textContent = "";
+    clearTimeout(timer); timer = setTimeout(persist, 500);
+  });
+  stanceBtns.forEach(function (b) {
+    b.addEventListener("click", function () {
+      var v = b.getAttribute("data-stance");
+      state.stance = state.stance === v ? "" : v;
+      paintStance(); persist();
+    });
+  });
+
+  /* ---------- app shell ---------- */
+  var views = { home: "v-home", archive: "v-archive", notes: "v-notes", read: "v-read" };
+  var tabs = Array.prototype.slice.call(document.querySelectorAll(".tab"));
+  function show(name) {
+    Object.keys(views).forEach(function (k) { document.getElementById(views[k]).classList.toggle("on", k === name); });
+    app.setAttribute("data-view", name);
+    tabs.forEach(function (t) {
+      if (t.getAttribute("data-go") === name) t.setAttribute("aria-current", "page"); else t.removeAttribute("aria-current");
+    });
+    if (name === "home") renderHome();
+    if (name === "archive") renderArchive();
+    if (name === "notes") renderNotes();
+    if (name === "read") requestAnimationFrame(function () { drawCoverArt(); go(prog.last || 0, true); });
+  }
+  tabs.forEach(function (t) { t.addEventListener("click", function () { show(t.getAttribute("data-go")); }); });
+  document.getElementById("back").addEventListener("click", function () { show("home"); });
+
+  function openReader(fromStart) { if (fromStart) { prog.last = 0; } show("read"); }
+
+  var d = new Date();
+  var wd = ["일", "월", "화", "수", "목", "금", "토"][d.getDay()];
+  document.getElementById("today").textContent = pad(d.getMonth() + 1) + "." + pad(d.getDate()) + " " + wd;
+
+  function renderHome() {
+    var pg = document.getElementById("hero-pg");
+    var bars = document.getElementById("hero-bars");
+    var started = prog.max >= 0;
+    pg.hidden = !started;
+    if (started) {
+      bars.innerHTML = cards.map(function (c, i) { return '<i class="' + (i <= prog.max ? 'f' : '') + '"></i>'; }).join("");
+      document.getElementById("hero-count").textContent = (prog.max + 1) + " / " + N;
+    }
+    document.getElementById("hero-cta-t").textContent = started ? "이어 읽기" : "읽기";
+    requestAnimationFrame(layoutStack);
+  }
+  document.getElementById("hero-cta").addEventListener("click", function () { show("read"); });
+
+
+
+  /*ART-BEGIN*/
+  /* ---------- 표지 아트: 패턴 12종 + 무작위 파괴 ----------
+     한 표지에는 패턴 하나만 쓴다. 패턴을 규칙대로 만든 뒤, 위에서 아래로 갈수록 조각이 무작위로 사라지고 틈이 벌어진다.
+     motif: shards cracks spikes hexdots tri diamond dots slash xmark plus cells hex
+     seed: 무작위 모양, chaos: 파괴가 흐트러지는 정도, start/end: 면이 유지되다가 완전히 사라지는 세로 구간 */
+  var ART = {
+    today: { motif: "terrain", seed: 2026 },
+    c1:    { motif: "flow",   seed: 618 },
+    c2:    { motif: "dots6",  seed: 43 },
+    c3:    { motif: "scrawl", seed: 295 }
+  };
+  /* 선형 흑백 패턴 5종: burst(파동 다발) loft(곡면 선) dots6(점 메시) scrawl(스크리블) flow(흐르는 선). seed로 무작위 변형 */
+  var LINE_MOTIFS = { terrain: 1, burst: 1, loft: 1, dots6: 1, scrawl: 1, flow: 1 };
+  function rng(s) { s = s | 0; return function () { s = (s + 0x6D2B79F5) | 0; var t = Math.imul(s ^ (s >>> 15), 1 | s); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+  function drawLines(cv, a, w, h) {
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+    var ctx = cv.getContext("2d"); ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, w, h); ctx.lineCap = "round"; ctx.lineJoin = "round";
+    var R = rng(a.seed), rr = function (lo, hi) { return lo + (hi - lo) * R(); };
+    var ry = Math.min(h * 0.2, 115), cy = 44 + ry * 1.1, cx = w / 2, hw = w * (a.motif === 'dots6' ? 0.44 : 0.72), TAU = Math.PI * 2, i, j;
+    function line(pts, lw, al) { ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]); for (var q = 1; q < pts.length; q++) ctx.lineTo(pts[q][0], pts[q][1]); ctx.lineWidth = lw; ctx.strokeStyle = "rgba(255,255,255," + al + ")"; ctx.stroke(); }
+    if (a.motif === "terrain") {
+      /* 지형 등고선: 뒤에서 앞으로 쌓인 가로선이 봉우리를 따라 솟는다 */
+      var K = 3 + (R() * 3 | 0), bumps = [], k2;
+      for (k2 = 0; k2 < K; k2++) bumps.push({ a: rr(0.45, 1), bx: rr(-0.8, 0.8), bz: rr(0.05, 0.85), sx: rr(0.12, 0.3), sz: rr(0.1, 0.32) });
+      var rid = rr(0.1, 0.3), ridx = rr(-0.5, 0.5), nz = ry < 80 ? 22 : 28, nph = rr(0, TAU), nf = rr(2, 5);
+      var hf = function (x, z) {
+        var s = rid * Math.exp(-Math.pow((x - ridx) / 0.7, 2));
+        for (var q = 0; q < K; q++) { var b = bumps[q]; s += b.a * Math.exp(-Math.pow((x - b.bx) / b.sx, 2) - Math.pow((z - b.bz) / b.sz, 2)); }
+        return s + 0.03 * Math.sin(nf * x * 3 + nph + z * 5);
+      };
+      var y0 = cy - ry * 0.12, y1 = cy + ry * 0.72, Hm = ry * 0.95;
+      for (i = 0; i < nz; i++) {
+        var z = Math.min(1, Math.max(0, i / (nz - 1) + rr(-0.25, 0.25) / nz)), by0 = y0 + (y1 - y0) * z, pts5 = [];
+        for (var xx = -1; xx <= 1.0001; xx += 0.004) { pts5.push([cx + xx * hw * (0.75 + 0.45 * z), by0 - Hm * (0.55 + 0.45 * (1 - z)) * hf(xx, z)]); }
+        ctx.beginPath(); ctx.moveTo(pts5[0][0], pts5[0][1]);               /* 선 아래를 카드 배경색으로 채워 뒤쪽 선을 가린다 */
+        for (var fq = 1; fq < pts5.length; fq++) ctx.lineTo(pts5[fq][0], pts5[fq][1]);
+        ctx.lineTo(pts5[pts5.length - 1][0], y1 + ry * 0.7); ctx.lineTo(pts5[0][0], y1 + ry * 0.7); ctx.closePath();
+        ctx.fillStyle = "#000000"; ctx.fill();
+        line(pts5, R() < 0.2 ? rr(1.3, 2) : rr(0.6, 1.1), rr(0.85, 1));
+      }
+    } else if (a.motif === "burst") {
+      var n = 60 + (R() * 30 | 0), k0 = rr(5, 8), dk = rr(0.05, 0.14), ph = rr(0.2, 0.5), mid = rr(0.45, 0.62), sg = rr(0.22, 0.32);
+      for (i = 0; i < n; i++) {
+        var A = ry * rr(0.5, 1.5) * (R() < 0.12 ? 0.3 : 1), k = (k0 + i * dk + rr(-0.6, 0.6)) * TAU / 2, p = i * ph + rr(-0.5, 0.5), pts = [], lwb = R() < 0.15 ? 1.6 : rr(0.4, 0.9);
+        for (var x = -1; x <= 1.0001; x += 0.004) {
+          var e = Math.exp(-Math.pow((Math.abs(x) - mid) / sg, 2)) + 0.04;
+          pts.push([cx + x * hw, cy + A * e * Math.sin(k * x + p)]);
+        }
+        line(pts, lwb, rr(0.35, 0.95));
+      }
+    } else if (a.motif === "loft") {
+      var bez = function () { var c = []; for (var q = 0; q < 4; q++) c.push([rr(-1, 1) * hw, rr(-1.35, 1.35) * ry]); return c; };
+      var P = bez(), Q = bez(); P[0][0] = -hw; Q[0][0] = -hw * rr(0.6, 1); P[3][0] = hw * rr(0.5, 1); Q[3][0] = hw;
+      var B = function (c, s) { var u = 1 - s; return [u * u * u * c[0][0] + 3 * u * u * s * c[1][0] + 3 * u * s * s * c[2][0] + s * s * s * c[3][0], u * u * u * c[0][1] + 3 * u * u * s * c[1][1] + 3 * u * s * s * c[2][1] + s * s * s * c[3][1]]; };
+      var m = 26 + (R() * 8 | 0), tw = rr(0.15, 0.5);
+      for (i = 0; i <= m; i++) {
+        var tt = Math.min(1, Math.max(0, i / m + rr(-0.35, 0.35) / m)), pts2 = [];
+        for (var s = 0; s <= 1.0001; s += 0.01) { var p1 = B(P, s), q1 = B(Q, Math.min(1, Math.max(0, s + tw * Math.sin(s * Math.PI) * (tt - 0.5)))); pts2.push([cx + p1[0] * (1 - tt) + q1[0] * tt, cy + p1[1] * (1 - tt) + q1[1] * tt]); }
+        line(pts2, R() < 0.18 ? rr(1.4, 2.2) : rr(0.4, 1), rr(0.4, 1));
+      }
+      var rn = 30 + (R() * 12 | 0);
+      for (i = 0; i <= rn; i++) { if (R() < 0.25) continue; var s2 = Math.min(1, Math.max(0, i / rn + rr(-0.4, 0.4) / rn)), pa = B(P, s2), qa = B(Q, s2); line([[cx + pa[0], cy + pa[1]], [cx + qa[0], cy + qa[1]]], rr(0.3, 0.8), rr(0.2, 0.6)); }
+    } else if (a.motif === "dots6") {
+      var NU = 70, NV = 34, ax = rr(0.15, 0.35), f1 = rr(1, 2.2), f2 = rr(1.2, 2.6), p1v = rr(0, TAU), p2v = rr(0, TAU), by = rr(0.3, 0.8), sh = rr(-0.6, 0.6);
+      var Xp = function (u, v) { return cx + hw * ((u - 0.5) * 2 * (1 + sh * (v - 0.5)) + ax * Math.sin(TAU * (f1 * v) + p1v) * Math.sin(Math.PI * u)); };
+      var Yp = function (u, v) { return cy + ry * ((v - 0.5) * 1.05 + by * Math.sin(TAU * (f2 * u) + p2v) * 0.3 + 0.3 * (u - 0.5) * (v - 0.5) * 2); };
+      ctx.fillStyle = "#fff";
+      for (j = 0; j <= NV; j++) for (i = 0; i <= NU; i++) {
+        var u = i / NU, v = j / NV, x1 = Xp(u, v), y1 = Yp(u, v), x2 = Xp(Math.min(1, u + 1 / NU), v), y2 = Yp(u, Math.min(1, v + 1 / NV));
+        var ds = Math.min(Math.hypot(x2 - x1, 1e3) * 0 + Math.abs(x2 - x1), Math.abs(y2 - y1) + 0.01) + 0.2, r = Math.max(0.35, Math.min(1.7, ds * 0.42));
+        ctx.beginPath(); ctx.arc(x1, y1, r, 0, TAU); ctx.fill();
+      }
+    } else if (a.motif === "scrawl") {
+      var strands = 7 + (R() * 4 | 0);
+      for (i = 0; i < strands; i++) {
+        var aa = 9 + (R() * 14 | 0), bb = 4 + (R() * 12 | 0), R1 = ry * rr(0.45, 0.85), R2 = ry * rr(0.15, 0.5), pp = rr(0, TAU), rot = rr(-0.5, 0.5), sx = rr(1.9, 3.0), pts3 = [];
+        for (var th = 0; th <= TAU * 2; th += 0.01) {
+          var xx = R1 * Math.cos(aa * th / 2 + pp) * (0.6 + 0.4 * Math.cos(th)) + R2 * Math.cos(bb * th), yy = R1 * Math.sin(aa * th / 2) * 0.6 + R2 * Math.sin(bb * th) * 0.5;
+          xx *= sx; pts3.push([cx + xx * Math.cos(rot) - yy * Math.sin(rot), cy + xx * Math.sin(rot) + yy * Math.cos(rot)]);
+        }
+        line(pts3, R() < 0.2 ? rr(2, 3.2) : rr(0.4, 1.4), rr(0.4, 1));
+      }
+    } else {                                                      /* flow: 다발이 모였다 갈라지고, 가는 선이 가로지르며, 급하게 꺾인다 */
+      var sig = function (x) { return 1 / (1 + Math.exp(-x)); };
+      var mkPath = function (amp) {
+        var K = 4 + (R() * 4 | 0), bs = [], ls = [], ss = [], q0;
+        for (q0 = 0; q0 < K; q0++) { bs.push(rr(-1.1, 1.1)); ls.push(rr(-1, 1) * amp); ss.push(rr(0.02, 0.16)); }
+        var L0 = rr(-1, 1) * amp, w1 = rr(1.5, 4), w2 = rr(0.3, 1), ph1 = rr(0, TAU), ph2 = rr(0, TAU), wa = amp * rr(0.03, 0.12);
+        return function (x) { var y = L0, prev = L0; for (var q = 0; q < K; q++) { y += (ls[q] - (q ? ls[q - 1] : L0)) * sig((x - bs[q]) / ss[q] * 1.0); } return y + wa * Math.sin(w1 * 3 * x + ph1) + wa * 0.5 * Math.sin(w2 * 9 * x + ph2); };
+      };
+      var seg = function (fy, wfn, al) {
+        var prevX = null, prevY = null;
+        for (var x = -1; x <= 1.0001; x += 0.006) {
+          var X = cx + x * hw, Y = cy - ry * 0.1 + ry * 0.95 * Math.tanh(fy(x) / (ry * 0.95));
+          if (prevX !== null) { ctx.beginPath(); ctx.moveTo(prevX, prevY); ctx.lineTo(X, Y); ctx.lineWidth = wfn(x); ctx.strokeStyle = "rgba(255,255,255," + al + ")"; ctx.stroke(); }
+          prevX = X; prevY = Y;
+        }
+      };
+      var nGroups = 2 + (R() * 2 | 0), gi, mi;
+      for (gi = 0; gi < nGroups; gi++) {
+        var base = mkPath(ry * 0.8), mcount = 3 + (R() * 4 | 0), fs = rr(0.6, 1.6), fph = rr(0, TAU), sp = ry * rr(0.12, 0.3);
+        for (mi = 0; mi < mcount; mi++) {
+          var oj = (mi - (mcount - 1) / 2) + rr(-0.3, 0.3), w0 = R() < 0.35 ? rr(2.2, 4) : rr(0.6, 1.6), wph = rr(0, TAU), wf = rr(1.5, 4);
+          (function (oj, w0, wph, wf) {
+            seg(function (x) { return base(x) + oj * sp * (0.08 + 0.92 * Math.pow(Math.abs(Math.sin(Math.PI * (x * fs) + fph)), 1.4)); },
+              function (x) { return w0 * (0.4 + 0.6 * Math.abs(Math.sin(wf * x + wph))); }, rr(0.7, 1));
+          })(oj, w0, wph, wf);
+        }
+      }
+      var nThin = 6 + (R() * 6 | 0);
+      for (i = 0; i < nThin; i++) { var tp = mkPath(ry * 0.95), tw = rr(0.3, 0.7); (function (tp, tw) { seg(tp, function () { return tw; }, rr(0.25, 0.5)); })(tp, tw); }
+    }
+  }
+  function hRand(x, y, s) {
+    var h = (Math.imul(x, 374761393) + Math.imul(y, 668265263) + Math.imul(s, 1274126177)) | 0;
+    h = Math.imul(h ^ (h >>> 13), 1274126177); h ^= h >>> 16;
+    return (h >>> 0) / 4294967295;
+  }
+  function cl(x, a, b) { return x < a ? a : (x > b ? b : x); }
+  function hexRGB(s) { return [parseInt(s.slice(1, 3), 16), parseInt(s.slice(3, 5), 16), parseInt(s.slice(5, 7), 16)]; }
+  function drawArt(cv, a, w, h) {
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var W = Math.max(1, Math.round(w * dpr)), H = Math.max(1, Math.round(h * dpr));
+    var key = [W, H, a.motif, a.seed, a.chaos, a.start, a.end, a.pitch].join("|");
+    if (cv._key === key) return;
+    cv._key = key;
+    if (LINE_MOTIFS[a.motif]) { drawLines(cv, a, w, h); return; }
+    cv.width = W; cv.height = H;
+    var ctx = cv.getContext("2d");
+    var img = ctx.createImageData(W, H), d = img.data;
+    var c1 = hexRGB(a.from), c2 = hexRGB(a.to);
+    var P = a.pitch * dpr, S = a.seed | 0, mo = a.motif, SQ3 = 1.7320508;
+    var chaos = (a.chaos == null ? 0.55 : a.chaos) / 0.55;
+    var span = a.end - a.start, ys0 = a.start * H, ye = a.end * H;
+    function kAt(py, id1, id2, amp) {
+      var base = cl((py / H - a.start) / span, 0, 1);
+      return cl(base + (hRand(id1, id2, S + 3) - 0.5) * amp * chaos * Math.min(base, 1 - base) * 2, 0, 1);
+    }
+    /* 격자점 미리 계산 (균열형, 조각형) */
+    var GC = mo === "cells" ? P * 1.4 : (mo === "cracks" ? P * 1.1 : (mo === "shards" ? P : 0));
+    var nC = 0, nR = 0, PX, PY;
+    if (GC) {
+      nC = Math.ceil(W / GC) + 4; nR = Math.ceil(H / GC) + 4;
+      PX = new Float32Array(nC * nR); PY = new Float32Array(nC * nR);
+      for (var jy = 0; jy < nR; jy++) for (var ix = 0; ix < nC; ix++) {
+        var gx0 = ix - 1, gy0 = jy - 1, id = jy * nC + ix;
+        if (mo === "shards") { PX[id] = (gx0 + (hRand(gx0, gy0, S + 20) - 0.5) * 0.7) * GC; PY[id] = (gy0 + (hRand(gx0, gy0, S + 21) - 0.5) * 0.7) * GC; }
+        else { PX[id] = (gx0 + 0.12 + 0.76 * hRand(gx0, gy0, S)) * GC; PY[id] = (gy0 + 0.12 + 0.76 * hRand(gx0, gy0, S + 1)) * GC; }
+      }
+    }
+    function triCov(x, y, ax, ay, bx, by, cx2, cy2, kc) {   /* 조각을 중심쪽으로 줄여 틈을 만든다 */
+      var gx = (ax + bx + cx2) / 3, gy = (ay + by + cy2) / 3, sc = 1 - (0.05 + 0.55 * kc);
+      var px = gx + (ax - gx) * sc, py = gy + (ay - gy) * sc, qx = gx + (bx - gx) * sc, qy = gy + (by - gy) * sc, rx = gx + (cx2 - gx) * sc, ry = gy + (cy2 - gy) * sc;
+      var m = 1e9, e, L;
+      L = Math.sqrt((qx - px) * (qx - px) + (qy - py) * (qy - py)) || 1; e = ((qx - px) * (y - py) - (qy - py) * (x - px)) / L; m = Math.min(m, e);
+      L = Math.sqrt((rx - qx) * (rx - qx) + (ry - qy) * (ry - qy)) || 1; e = ((rx - qx) * (y - qy) - (ry - qy) * (x - qx)) / L; m = Math.min(m, e);
+      L = Math.sqrt((px - rx) * (px - rx) + (py - ry) * (py - ry)) || 1; e = ((px - rx) * (y - ry) - (py - ry) * (x - rx)) / L; m = Math.min(m, e);
+      return m;
+    }
+    for (var y = 0; y < H; y++) {
+      var v = y / H;
+      if (v > a.end + 0.2) break;
+      var kp = cl((v - a.start) / span, 0, 1);
+      for (var x = 0; x < W; x++) {
+        var u = x / W, cov = 1, kc;
+        if (mo === "cells" || mo === "cracks") {
+          var cx = Math.floor(x / GC), cy = Math.floor(y / GC);
+          var d1 = 1e9, d2 = 1e9, nx = 0, ny = 0, nsy = 0;
+          for (var j = -1; j <= 1; j++) for (var i = -1; i <= 1; i++) {
+            var gx = cx + i, gy = cy + j, id2 = (gy + 1) * nC + (gx + 1);
+            var sx = PX[id2], sy = PY[id2];
+            var dd = Math.sqrt((x - sx) * (x - sx) + (y - sy) * (y - sy));
+            if (dd < d1) { d2 = d1; d1 = dd; nx = gx; ny = gy; nsy = sy; } else if (dd < d2) { d2 = dd; }
+          }
+          var edge = (d2 - d1) * 0.5;
+          if (mo === "cells") {
+            kc = kAt(nsy, nx, ny, 0.6);
+            var cw = dpr * (0.8 + 9 * kp * kp);
+            cov = (kc >= 0.98 || hRand(nx, ny, S + 5) < kc * 0.9) ? 0 : cl((edge - cw) / dpr + 0.5, 0, 1);
+          } else {
+            var cw2 = dpr * (0.6 + 13 * Math.pow(kp, 1.5)) * (0.55 + 0.9 * hRand(nx, ny, S + 6));
+            var kk2 = kAt(nsy, nx, ny, 0.6);
+            cov = (kk2 >= 0.98 || hRand(nx, ny, S + 5) < kk2 * 0.9) ? 0 : cl((edge - cw2) / dpr + 0.5, 0, 1);
+          }
+        } else if (mo === "shards") {
+          var scx = Math.floor(x / GC), scy = Math.floor(y / GC), best = -1e9, any = false;
+          for (var j2 = -1; j2 <= 1; j2++) for (var i2 = -1; i2 <= 1; i2++) {
+            var qx0 = scx + i2, qy0 = scy + j2;
+            var i00 = (qy0 + 1) * nC + (qx0 + 1), i10 = i00 + 1, i01 = i00 + nC, i11 = i01 + 1;
+            var diag = hRand(qx0, qy0, S + 9) < 0.5;
+            for (var tt = 0; tt < 2; tt++) {
+              var A, B, Cc;
+              if (diag) { if (tt === 0) { A = i00; B = i10; Cc = i11; } else { A = i00; B = i11; Cc = i01; } }
+              else { if (tt === 0) { A = i00; B = i10; Cc = i01; } else { A = i10; B = i11; Cc = i01; } }
+              var cyy = (PY[A] + PY[B] + PY[Cc]) / 3;
+              var kk = kAt(cyy, qx0 * 2 + tt, qy0, 0.6);
+              if (kk >= 0.98 || hRand(qx0 * 2 + tt, qy0, S + 4) < kk * 0.92) continue;
+              var mm = triCov(x, y, PX[A], PY[A], PX[B], PY[B], PX[Cc], PY[Cc], kk);
+              if (mm > best) best = mm;
+              any = true;
+            }
+          }
+          cov = any ? cl(best / dpr + 0.5, 0, 1) : 0;
+        } else if (mo === "spikes" || mo === "slash") {
+          var slope = mo === "slash" ? 0.85 : 0.1, W0 = mo === "slash" ? P * 0.42 : P * 0.5;
+          if (y <= ys0) { cov = 1; }
+          else {
+            var xs = x - slope * (y - ys0), col = Math.floor(xs / W0), dx = xs - (col + 0.5) * W0;
+            var len = (ye - ys0) * (0.2 + 0.8 * Math.pow(hRand(col, 7, S), 0.7)) * (0.6 + 0.4 * chaos);
+            var t = (y - ys0) / len;
+            if (t >= 1) continue;
+            var t0 = hRand(col, 8, S) * 0.35, hw = W0 * 0.5 * (1 - Math.max(0, (t - t0) / (1 - t0)));
+            cov = cl((hw - Math.abs(dx)) / dpr + 0.5, 0, 1);
+          }
+        } else if (mo === "hexdots" || mo === "hex") {
+          var R = P * (mo === "hex" ? 0.62 : 0.55), q = (SQ3 / 3 * x - y / 3) / R, rr = 2 / 3 * y / R, zz = -q - rr;
+          var rq = Math.round(q), rrr = Math.round(rr), rz = Math.round(zz);
+          var dq = Math.abs(rq - q), dr = Math.abs(rrr - rr), dz = Math.abs(rz - zz);
+          if (dq > dr && dq > dz) rq = -rrr - rz; else if (dr > dz) rrr = -rq - rz;
+          var hx = R * SQ3 * (rq + rrr / 2), hy = R * 1.5 * rrr;
+          kc = kAt(hy, rq, rrr, 0.4);
+          if (kc >= 0.98) continue;
+          var ax = Math.abs(x - hx), ay = Math.abs(y - hy), apo = R * 0.8660254;
+          var nh = Math.max(ay, ax * 0.8660254 + ay * 0.5) / apo;
+          if (mo === "hexdots") {
+            var nc = Math.sqrt(ax * ax + ay * ay) / apo;
+            cov = kc < 0.04 ? 1 : cl(((1 - kc * 0.92) - (nh + (nc - nh) * kc)) * apo / dpr + 0.5, 0, 1);
+          } else {
+            cov = kc < 0.04 ? 1 : cl((1 - kc - nh) * apo / dpr + 0.5, 0, 1);
+          }
+        } else if (mo === "tri") {
+          var Sd = P * 1.15, hh = Sd * 0.8660254;
+          var qq = x / Sd - y / (Sd * SQ3), r2 = y / hh, iq = Math.floor(qq), ir = Math.floor(r2), fq = qq - iq, fr = r2 - ir;
+          var up = (fq + fr) < 1, b0, b1, b2;
+          if (up) { b0 = 1 - fq - fr; b1 = fq; b2 = fr; } else { b0 = fq + fr - 1; b1 = 1 - fr; b2 = 1 - fq; }
+          var mb = Math.min(b0, b1, b2), rc = ir + (up ? 1 / 3 : 2 / 3);
+          kc = kAt(rc * hh, iq * 2 + (up ? 1 : 0), ir, 0.4);
+          if (kc >= 0.98 || hRand(iq * 2 + (up ? 1 : 0), ir, S + 4) < kc * 0.85) continue;
+          cov = kc < 0.04 ? 1 : cl((mb * hh - (0.9 * dpr + kc * hh / 3 * 0.9)) / dpr + 0.5, 0, 1);
+        } else if (mo === "diamond" || mo === "xmark") {
+          var P2 = P * 0.95, uu = (x + y) * 0.70710678, vv = (x - y) * 0.70710678;
+          var iu = Math.floor(uu / P2), iv = Math.floor(vv / P2), uc = (iu + 0.5) * P2, vc = (iv + 0.5) * P2;
+          kc = kAt((uc - vc) * 0.70710678, iu, iv, 0.4);
+          if (kc >= 0.98) continue;
+          var du = Math.abs(uu - uc), dv = Math.abs(vv - vc);
+          if (mo === "diamond") {
+            cov = kc < 0.04 ? 1 : cl((P2 * 0.5 * (1 - kc) - Math.max(du, dv)) / dpr + 0.5, 0, 1);
+          } else {
+            var L1 = P2 * 0.5 * (1 - 0.3 * kc), w1 = P2 * 0.5 * Math.pow(1 - kc, 2.0);
+            cov = kc < 0.06 ? 1 : cl(Math.max(Math.min(w1 - du, L1 - dv), Math.min(w1 - dv, L1 - du)) / dpr + 0.5, 0, 1);
+          }
+        } else if (mo === "dots") {
+          var dgx = Math.floor(x / P), dgy = Math.floor(y / P);
+          kc = kAt((dgy + 0.5) * P, dgx, dgy, 0.35);
+          if (kc >= 0.98) continue;
+          var rd = P * 0.72 * Math.pow(1 - kc, 0.9), ddx = x - (dgx + 0.5) * P, ddy = y - (dgy + 0.5) * P;
+          cov = kc < 0.04 ? 1 : cl((rd - Math.sqrt(ddx * ddx + ddy * ddy)) / dpr + 0.5, 0, 1);
+        } else {                                           /* plus */
+          var pgx = Math.floor(x / P), pgy = Math.floor(y / P);
+          kc = kAt((pgy + 0.5) * P, pgx, pgy, 0.4);
+          if (kc >= 0.98) continue;
+          var pdx = Math.abs(x - (pgx + 0.5) * P), pdy = Math.abs(y - (pgy + 0.5) * P);
+          var L2 = P * 0.5 * (1 - 0.25 * kc), w2 = P * 0.5 * Math.pow(1 - kc, 0.9);
+          cov = kc < 0.06 ? 1 : cl(Math.max(Math.min(w2 - pdx, L2 - pdy), Math.min(w2 - pdy, L2 - pdx)) / dpr + 0.5, 0, 1);
+        }
+        if (cov <= 0) continue;
+        var g = cl(0.8 * v / a.end + 0.2 * u, 0, 1), o = (y * W + x) * 4;
+        d[o] = c1[0] + (c2[0] - c1[0]) * g;
+        d[o + 1] = c1[1] + (c2[1] - c1[1]) * g;
+        d[o + 2] = c1[2] + (c2[2] - c1[2]) * g;
+        d[o + 3] = 255 * cov;
+      }
+    }
+    ctx.putImageData(img, 0, 0);
+  }
+  /*ART-END*/
+  function drawBoxArt() {
+    Array.prototype.forEach.call(document.querySelectorAll("canvas.art[data-art]"), function (cv) {
+      var b = cv.parentNode;
+      if (b.clientWidth) drawArt(cv, ART[cv.getAttribute("data-art")], b.clientWidth, b.clientHeight);
+    });
+  }
+  function drawCoverArt() {
+    var cv = document.getElementById("art-cover");
+    if (!cv) return;
+    var card = cv.parentNode;
+    if (card.clientWidth) drawArt(cv, { motif: ART.today.motif, seed: ART.today.seed, pitch: ART.today.pitch, start: 0.08, end: 0.8, from: ART.today.from, to: ART.today.to }, card.clientWidth, 340);
+  }
+
+  /* ---------- home: 가운데 오늘 호, 위아래 호는 흐리게 ---------- */
+  var stack = document.getElementById("stack");
+  var boxes = Array.prototype.slice.call(stack.querySelectorAll(".ibox"));
+  function fade() {
+    var h = stack.clientHeight;
+    var mid = stack.scrollTop + h / 2;
+    boxes.forEach(function (b) {
+      var c = b.offsetTop + b.offsetHeight / 2;
+      var f = Math.min(Math.abs(c - mid) / 400, 1);
+      b.style.opacity = String(1 - 0.62 * f);
+      b.classList.toggle("focus", f < 0.18);
+      b.style.transform = "scale(" + (1 - 0.06 * f) + ")";
+      b.style.pointerEvents = f > 0.5 ? "none" : "";
+    });
+  }
+  function centerOn(b, smooth) {
+    var h = stack.clientHeight;
+    stack.scrollTo({ top: b.offsetTop + b.offsetHeight / 2 - h / 2, behavior: smooth && !reduced() ? "smooth" : "auto" });
+  }
+  function layoutStack() {
+    var h = stack.clientHeight;
+    if (!h) return;
+    var pad = Math.max(0, (h - boxes[0].offsetHeight) / 2);
+    stack.style.paddingBlock = pad + "px";
+    centerOn(boxes[1], false);
+    drawBoxArt();
+    fade();
+  }
+  stack.addEventListener("scroll", fade, { passive: true });
+  boxes.forEach(function (b) {
+    b.addEventListener("click", function (e) {
+      if (e.target.closest("button")) return;
+      centerOn(b, true);
+    });
+  });
+  window.addEventListener("resize", function () { if (app.getAttribute("data-view") === "home") layoutStack(); });
+
+  var filter = "all";
+  function renderArchive() {
+    var started = prog.max >= 0;
+    var done = prog.max >= N - 1;
+    var show1 = filter === "all" || (filter === "ing" && started && !done) || (filter === "done" && done);
+    var box = document.getElementById("issues");
+    if (!show1) { box.innerHTML = '<div class="empty">해당하는 호가 없습니다.</div>'; return; }
+    var pct = started ? Math.round(((prog.max + 1) / N) * 100) : 0;
+    var badge = !started ? '' : (done ? '<span class="badge done">완료</span>' : '<span class="badge">읽는 중</span>');
+    box.innerHTML = '<button type="button" class="issue" id="issue-1"><span class="thumb"><em lang="en">Logic, Pain…</em></span>' +
+      '<span class="ib"><span class="top"><span class="dt">10.23 금</span>' + badge + '</span>' +
+      '<span class="tt">논리, 고통, 그리고 울트라 러닝의 현실</span><span class="by">Francesco Puppi</span>' +
+      '<span class="bar"><i><b style="width:' + pct + '%"></b></i><span>' + (started ? (prog.max + 1) : 0) + ' / ' + N + '</span></span></span></button>';
+    document.getElementById("issue-1").addEventListener("click", function () { show("read"); });
+  }
+  Array.prototype.forEach.call(document.querySelectorAll(".fchip"), function (b) {
+    b.addEventListener("click", function () {
+      filter = b.getAttribute("data-f");
+      Array.prototype.forEach.call(document.querySelectorAll(".fchip"), function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+      renderArchive();
+    });
+  });
+
+  function renderNotes() {
+    var body = document.getElementById("note-body");
+    if (state.memo) { body.textContent = state.memo; body.classList.remove("ph"); }
+    else { body.textContent = "아직 메모가 없습니다."; body.classList.add("ph"); }
+    document.getElementById("st-agree").className = state.stance === "agree" ? "on" : "";
+    document.getElementById("st-doubt").className = state.stance === "doubt" ? "on" : "";
+  }
+  document.getElementById("note-go").addEventListener("click", function () { prog.last = N - 1; show("read"); });
+
+  paint(0);
+  renderHome();
+  /* 넓은 화면(PC)에서는 폰 틀을 화면 높이에 맞춰 키운다 */
+  function fitScreen() {
+    var z = 1, w = window.innerWidth, h = window.innerHeight;
+    if (w >= 700) z = Math.max(1, Math.min(h / 700, w / 520, 1.8));
+    app.style.maxWidth = w >= 700 ? "520px" : "";
+    app.style.zoom = z > 1.02 ? String(z) : "";
+    app.style.height = z > 1.02 ? (h / z) + "px" : "";
+  }
+  fitScreen();
+  window.addEventListener("resize", function () { fitScreen(); if (app.getAttribute("data-view") === "home") { layoutStack(); drawBoxArt(); } });
+})();
+
+</script>
