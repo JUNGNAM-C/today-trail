@@ -947,27 +947,11 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
     }
     line(plain(c.title), "600 15px " + SANS, "#A8A8A8", 24, P, TW); y += 12;
     box("#161616", 0, function () {
-      line("ORIGINAL", "400 12.5px " + MONO, "#A8A8A8", 18, P + 16, TW - 32); y += 4;
-      line(plain(c.orig.text), "italic 500 22px " + QUOTE, "#F0F0F0", 30, P + 16, TW - 32); y += 12;
-      if (draw) { ctx.fillStyle = "#333"; ctx.fillRect(P + 16, y, TW - 32, 1); } y += 11;
-      line(plain(c.ko), "600 16px " + SANS, "#F0F0F0", 27, P + 16, TW - 32);
+      line(plain(c.ko), "700 18px " + SANS, "#F0F0F0", 29, P + 16, TW - 32);
     }, 16);
-    y += 16;
-    (c.terms || []).forEach(function (tm) {
-      line(plain(tm[0]), "italic 500 16px " + QUOTE, "#F0F0F0", 24, P, TW);
-      line(plain(tm[1]), "400 15px " + SANS, "#F0F0F0", 26, P, TW); y += 8;
-    });
-    y += 8;
+    y += 20;
     line("설명", "600 13px " + SANS, "#A8A8A8", 22, P, TW); y += 4;
     c.expl.forEach(function (pp) { line(plain(pp), "400 15px " + SANS, "#F0F0F0", 27, P, TW); y += 10; });
-    if (c.interp) {
-      y += 6;
-      box("#2A220C", 0, function () {
-        line("해석  제 생각이며 원본에 없는 내용", "600 13px " + SANS, "#E8BC52", 22, P + 14, TW - 28); y += 6;
-        c.interp.forEach(function (pp) { line(plain(pp), "400 15px " + SANS, "#F0F0F0", 26, P + 14, TW - 28); y += 8; });
-        y -= 8;
-      }, 14);
-    }
     return y + 64;
   }
   function makeImages() {
