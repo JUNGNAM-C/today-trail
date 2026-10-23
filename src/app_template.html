@@ -1,0 +1,583 @@
+<title>오늘의 트레일</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600&family=Newsreader:ital,wght@1,500&family=Noto+Serif+KR:wght@600;700&display=swap">
+<style>
+/* Layout: 모바일 앱 한 화면. 하단 탭(오늘 / 지난 호 / 내 메모)으로 이동하고, 읽기 화면에서는 탭이 숨고 카드를 좌우로 넘김 */
+:root {
+  --bg: #F0F0F0; --surface: #FFFFFF; --ink: #1A1A1A; --muted: #5F5F5F; --line: #D4D4D4;
+  --quote-bg: #E6E6E6; --accent: #D61F69; --accent-ink: #FFFFFF; --ok: #3A3A3A; --ok-bg: #E4E4E4;
+  --warn: #8A3B12; --warn-bg: #F6E3D6; --interp: #8A5A00; --interp-bg: #F6EBCF;
+  --font-display: "Noto Serif KR", "Nanum Myeongjo", "Apple SD Gothic Neo", serif;
+  --font-quote: "Newsreader", Georgia, "Times New Roman", serif;
+  --font-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121212; --surface: #1C1C1C; --ink: #EDEDED; --muted: #A0A0A0; --line: #333333;
+    --quote-bg: #262626; --accent: #FF5C9A; --accent-ink: #1A0A12; --ok: #CFCFCF; --ok-bg: #2A2A2A;
+    --warn: #F0B48F; --warn-bg: #3A2517; --interp: #E8BC52; --interp-bg: #33290F; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121212; --surface: #1C1C1C; --ink: #EDEDED; --muted: #A0A0A0; --line: #333333;
+  --quote-bg: #262626; --accent: #FF5C9A; --accent-ink: #1A0A12; --ok: #CFCFCF; --ok-bg: #2A2A2A;
+  --warn: #F0B48F; --warn-bg: #3A2517; --interp: #E8BC52; --interp-bg: #33290F; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--font-body); font-size: 15px; line-height: 1.75;
+  -webkit-text-size-adjust: 100%; word-break: keep-all; overflow-wrap: break-word;
+}
+a { color: var(--accent); text-underline-offset: 3px; }
+button { font: inherit; }
+a:focus-visible, button:focus-visible, textarea:focus-visible, .deck:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.app { max-width: 440px; height: 100dvh; margin: 0 auto; display: flex; flex-direction: column; position: relative; background: var(--bg);
+  padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }
+.view { display: none; flex: 1; min-height: 0; flex-direction: column; }
+.view.on { display: flex; }
+.scroll { overflow-y: auto; padding: 24px 16px 20px; display: flex; flex-direction: column; gap: 18px; flex: 1; min-height: 0; }
+.vh { display: flex; align-items: baseline; justify-content: space-between; padding: 0 4px; }
+.vh h1 { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 22px; line-height: 1.3; }
+.vh .d { font-family: var(--font-data); font-size: 12.5px; color: var(--muted); }
+
+.tabs { display: flex; flex: none; height: calc(68px + env(safe-area-inset-bottom, 0px)); padding-bottom: env(safe-area-inset-bottom, 0px); background: var(--surface); border-top: 1px solid var(--line); }
+.tab { flex: 1; appearance: none; border: 0; background: none; color: var(--muted); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 44px; font-size: 12px; cursor: pointer; }
+.tab[aria-current="page"] { color: var(--accent); font-weight: 600; }
+.app[data-view="read"] .tabs { display: none; }
+
+.hero { background: var(--ink); color: var(--bg); border-radius: 16px; padding: 24px 22px 22px; position: relative; overflow: hidden; display: flex; flex-direction: column; gap: 14px; }
+.hero > * { position: relative; }
+.kick { font-family: var(--font-data); font-size: 11px; letter-spacing: .18em; opacity: .8; }
+.en-title { font-family: var(--font-quote); font-style: italic; font-weight: 500; font-size: 33px; line-height: 1.12; letter-spacing: -.01em; max-width: 12ch; margin-top: 18px; }
+.ko-title { font-family: var(--font-display); font-weight: 700; font-size: 15px; line-height: 1.5; }
+.who { font-size: 13px; font-weight: 600; letter-spacing: .02em; }
+.pg { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
+.pg .bars { flex: 1; display: flex; gap: 3px; }
+.pg .bars i { flex: 1; height: 4px; border-radius: 2px; background: color-mix(in srgb, currentColor 25%, transparent); }
+.pg .bars i.f { background: var(--accent); }
+.pg span { font-family: var(--font-data); font-size: 12px; opacity: .85; }
+.cta { appearance: none; border: 0; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; border-radius: 999px; background: var(--accent); color: var(--accent-ink); font-weight: 600; font-size: 15px; cursor: pointer; width: 100%; }
+.sec { font-family: var(--font-data); font-size: 11px; letter-spacing: .16em; color: var(--muted); padding: 0 4px; }
+.rows { display: flex; flex-direction: column; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 4px; border-top: 1px solid var(--line); }
+.row:last-child { border-bottom: 1px solid var(--line); }
+.row .t { font-weight: 600; font-size: 15px; display: block; }
+.row .s { font-size: 12.5px; color: var(--muted); display: block; }
+
+
+.stack { position: relative; flex: 1; min-height: 0; overflow-y: auto; scroll-snap-type: y mandatory; scrollbar-width: none; overscroll-behavior: contain; padding-inline: 16px; display: flex; flex-direction: column; gap: 14px; }
+.stack::-webkit-scrollbar { display: none; }
+.ibox { flex: none; height: 372px; scroll-snap-align: center; scroll-snap-stop: always; will-change: transform, opacity; transform-origin: center; }
+.ibox.today { height: 558px; }
+.ibox .en-title { margin-top: 8px; font-size: 30px; }
+.ibox.today .en-title { margin-top: 28px; font-size: 38px; }
+.ibox.sm .en-title { font-size: 23px; max-width: 18ch; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.ibox .ko-title { margin-top: auto; }
+.ibox .cta { margin-top: 4px; }
+
+.chipbar { display: flex; gap: 8px; }
+.fchip { appearance: none; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; min-height: 36px; padding: 0 16px; font-size: 13.5px; cursor: pointer; }
+.fchip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.issue { appearance: none; text-align: left; width: 100%; display: flex; gap: 14px; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 12px; padding: 14px; cursor: pointer; }
+.thumb { flex: none; width: 76px; height: 100px; border-radius: 8px; background: var(--ink); color: var(--bg); position: relative; overflow: hidden; display: flex; align-items: flex-end; padding: 8px; }
+.thumb em { position: relative; font-family: var(--font-quote); font-size: 13px; line-height: 1.1; }
+.ib { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.ib .top { display: flex; align-items: center; justify-content: space-between; }
+.ib .dt { font-family: var(--font-data); font-size: 12px; color: var(--accent); font-weight: 500; }
+.badge { font-size: 11.5px; font-weight: 600; padding: 1px 8px; border-radius: 3px; background: var(--interp-bg); color: var(--interp); }
+.badge.done { background: var(--ok-bg); color: var(--ok); }
+.ib .tt { font-family: var(--font-display); font-weight: 700; font-size: 15.5px; line-height: 1.45; }
+.ib .by { font-size: 12.5px; color: var(--muted); }
+.ib .bar { margin-top: auto; display: flex; align-items: center; gap: 8px; }
+.ib .bar i { flex: 1; height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; display: block; }
+.ib .bar b { display: block; height: 4px; background: var(--accent); }
+.ib .bar span { font-family: var(--font-data); font-size: 12px; color: var(--muted); }
+.empty { padding: 28px 8px; text-align: center; color: var(--muted); font-size: 14px; }
+
+.note { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+.note .q { font-family: var(--font-display); font-weight: 700; font-size: 17px; line-height: 1.55; margin: 0; }
+.note .body { min-height: 96px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; font-size: 14.5px; line-height: 1.7; white-space: pre-wrap; }
+.note .body.ph { color: var(--muted); }
+.note .stance { display: flex; gap: 8px; }
+.note .stance span { border: 1px solid var(--line); background: var(--bg); border-radius: 999px; min-height: 36px; padding: 0 14px; font-size: 13.5px; display: inline-flex; align-items: center; }
+.note .stance span.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.note .go { align-self: flex-end; appearance: none; border: 0; background: none; color: var(--accent); font-weight: 600; font-size: 13.5px; min-height: 44px; cursor: pointer; }
+
+/* reader */
+#v-read { padding: 14px 16px 0; }
+.wrap { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 12px; }
+.head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.back { appearance: none; border: 0; background: none; color: var(--ink); width: 44px; height: 44px; margin-left: -10px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.ctrls { display: flex; gap: 6px; }
+.mode { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; background: var(--surface); }
+.mode button { appearance: none; border: 0; background: none; color: var(--muted); padding: 0 12px; min-height: 36px; cursor: pointer; font-size: 12.5px; }
+.mode button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.segs { display: flex; gap: 4px; }
+.seg { flex: 1; height: 22px; padding: 0; appearance: none; border: 0; background: none; cursor: pointer; display: flex; align-items: center; }
+.seg i { display: block; width: 100%; height: 4px; border-radius: 2px; background: var(--line); transition: background .2s; }
+.seg.on i { background: var(--accent); }
+.seg.cur i { height: 6px; }
+.deck { flex: 1; min-height: 0; display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
+.deck::-webkit-scrollbar { display: none; }
+.card { flex: 0 0 100%; min-width: 0; scroll-snap-align: center; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; }
+.meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.meta .no { font-family: var(--font-data); font-size: 12.5px; color: var(--accent); font-weight: 500; }
+.meta .ttl { font-size: 12px; letter-spacing: .1em; font-weight: 600; color: var(--muted); }
+.meta .stage { margin-left: auto; font-size: 11.5px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 0 9px; }
+.bridge { margin: 0; font-size: 13.5px; color: var(--muted); border-left: 3px solid var(--accent); padding-left: 10px; max-width: 60ch; }
+.orig { background: var(--quote-bg); border-radius: 8px; padding: 16px 16px 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.orig .lab { font-family: var(--font-data); font-size: 11px; letter-spacing: .14em; color: var(--muted); margin: 0; }
+.orig .q { font-family: var(--font-quote); font-style: italic; font-weight: 500; font-size: clamp(20px, 5.2vw, 24px); line-height: 1.38; margin: 0; overflow-wrap: anywhere; text-wrap: balance; }
+.orig .by { font-size: 12.5px; color: var(--muted); margin: 0; }
+.orig .ko { margin: 0; padding-top: 10px; border-top: 1px solid var(--line); font-weight: 600; font-size: 16px; line-height: 1.6; text-wrap: balance; }
+.terms { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; font-size: 13.5px; }
+.terms li { display: flex; flex-wrap: wrap; gap: 2px 8px; }
+.terms b { font-family: var(--font-quote); font-style: italic; font-weight: 500; font-size: 15px; }
+.expl { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.expl p { margin: 0; max-width: 60ch; }
+.lab2 { font-weight: 600; letter-spacing: .12em; font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
+.lab2 small { font-weight: 400; letter-spacing: 0; font-size: 12px; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px 8px; }
+.tag { font-size: 11.5px; font-weight: 600; letter-spacing: .03em; padding: 1px 8px; border-radius: 3px; background: var(--ok-bg); color: var(--ok); }
+.tag.warn { background: var(--warn-bg); color: var(--warn); }
+.interp { background: var(--interp-bg); border-radius: 8px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.interp .lab2 { color: var(--interp); }
+.interp p { margin: 0; max-width: 60ch; }
+.wrap[data-interp="off"] .interp { display: none; }
+.nextlead { margin: 0; font-size: 13.5px; color: var(--muted); text-align: right; max-width: 60ch; align-self: flex-end; }
+.nextlead b { color: var(--accent); font-weight: 600; }
+.cover-q { font-family: var(--font-display); font-weight: 700; font-size: clamp(24px, 6.2vw, 32px); line-height: 1.4; letter-spacing: -.01em; margin: 0; text-wrap: balance; }
+.card.cover { background: var(--ink); color: var(--bg); border-color: var(--ink); padding: 26px 22px 20px; gap: 18px; justify-content: space-between; position: relative; overflow-x: hidden; }
+.card.cover > * { position: relative; }
+.cv-kick { margin: 0; font-family: var(--font-data); font-size: 11.5px; letter-spacing: .18em; opacity: .75; }
+.cv-title { margin: 28px 0 0; font-family: var(--font-quote); font-style: italic; font-weight: 500; font-size: clamp(32px, 9vw, 42px); line-height: 1.12; letter-spacing: -.01em; text-wrap: balance; max-width: 15ch; }
+.cv-ko { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 17px; line-height: 1.5; }
+.cv-who { margin: 0; font-size: 13.5px; }
+.cv-who b { font-weight: 600; letter-spacing: .02em; }
+.cv-q { margin: 4px 0 0; padding: 12px 0; border-top: 1px solid color-mix(in srgb, currentColor 30%, transparent); border-bottom: 1px solid color-mix(in srgb, currentColor 30%, transparent); font-family: var(--font-display); font-weight: 600; font-size: 15.5px; line-height: 1.6; text-wrap: balance; }
+.flow { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; }
+.flow li { display: grid; grid-template-columns: 26px 1fr; gap: 0 8px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 14px; }
+.flow li:first-child { border-top: 0; }
+.flow .n { font-family: var(--font-data); font-size: 12.5px; color: var(--accent); padding-top: 2px; }
+.flow .t { font-weight: 600; }
+.flow .d { font-size: 13px; grid-column: 2; }
+.card.cover .flow li { border-top-color: color-mix(in srgb, currentColor 22%, transparent); }
+.card.cover .flow .d { opacity: .7; }
+.cv-hint { margin: 0; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 12.5px; }
+.cv-hint a { color: inherit; }
+.cv-hint span { opacity: .75; }
+.wrap[data-mode="ko"] .orig .q, .wrap[data-mode="ko"] .orig .lab { display: none; }
+.wrap[data-mode="ko"] .orig .ko { border-top: 0; padding-top: 0; }
+.nav { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 4px 0 calc(14px + env(safe-area-inset-bottom, 0px)); }
+.nav button.step { appearance: none; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 999px; min-height: 44px; padding: 0 18px; cursor: pointer; }
+.nav button.step:disabled { opacity: .35; cursor: default; }
+.nav .count { font-family: var(--font-data); font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { appearance: none; background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 999px; min-height: 36px; padding: 0 14px; cursor: pointer; font-size: 13.5px; }
+.chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+.saved { font-size: 12.5px; color: var(--muted); min-height: 1.4em; }
+@media (prefers-reduced-motion: reduce) { .seg i { transition: none; } }
+</style>
+
+<div class="app" id="app" data-view="home">
+
+  <section class="view on" id="v-home" aria-label="오늘">
+    <div class="vh" style="padding: 24px 20px 8px;"><h1>오늘의 트레일</h1><span class="d" id="today"></span></div>
+    <div class="stack" id="stack" tabindex="0" aria-label="호 목록. 위아래로 넘깁니다.">
+
+      <article class="hero ibox sm" data-i="0" aria-label="이전 호">
+        <div class="kick">PREVIOUS</div>
+        <div class="en-title" lang="en" style="margin-top:auto">No earlier issue</div>
+        <div class="ko-title">이전 호가 없습니다</div>
+        <div class="who">첫 호입니다</div>
+      </article>
+
+      <article class="hero ibox today" data-i="1" aria-label="오늘 호">
+        <div class="kick">TRAIL RUNNING · PODCAST</div>
+        <div class="en-title" lang="en">Logic, Pain, and the Reality of Ultra Running</div>
+        <div class="ko-title">논리, 고통, 그리고 울트라 러닝의 현실</div>
+        <div class="who">Francesco Puppi</div>
+        <div class="pg" id="hero-pg" hidden><div class="bars" id="hero-bars"></div><span id="hero-count"></span></div>
+        <button type="button" class="cta" id="hero-cta"><span id="hero-cta-t">읽기</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+      </article>
+
+      <article class="hero ibox sm" data-i="2" aria-label="다음 호 후보">
+        <div class="kick">NEXT · 후보</div>
+        <div class="en-title" lang="en">Courtney Dauwalter: Mindset Secrets From The World's Best Ultrarunner</div>
+        <div class="ko-title">코트니 도월터: 세계 최고 울트라 러너의 마인드셋</div>
+        <div class="who">Rich Roll Podcast #618</div>
+      </article>
+
+      <article class="hero ibox sm" data-i="3" aria-label="다음 호 후보">
+        <div class="kick">NEXT · 후보</div>
+        <div class="en-title" lang="en">The Interview: Kílian Jornet on What We Can Learn From Pushing Our Bodies to Extremes</div>
+        <div class="ko-title">킬리안 조르넷: 몸을 극한까지 밀어붙여 배울 수 있는 것</div>
+        <div class="who">NYT The Interview · 43분</div>
+      </article>
+
+      <article class="hero ibox sm" data-i="4" aria-label="다음 호 후보">
+        <div class="kick">NEXT · 후보</div>
+        <div class="en-title" lang="en">Why Ultrarunning Feels Necessary</div>
+        <div class="ko-title">울트라 러닝이 필요하게 느껴지는 이유</div>
+        <div class="who">Borderlands #295 · 21분</div>
+      </article>
+    </div>
+  </section>
+
+  <section class="view" id="v-archive" aria-label="지난 호">
+    <div class="scroll">
+      <div class="vh"><h1>지난 호</h1></div>
+      <div class="chipbar" role="group" aria-label="필터">
+        <button type="button" class="fchip" data-f="all" aria-pressed="true">전체</button>
+        <button type="button" class="fchip" data-f="ing" aria-pressed="false">읽는 중</button>
+        <button type="button" class="fchip" data-f="done" aria-pressed="false">완료</button>
+      </div>
+      <div class="sec">2026.10</div>
+      <div id="issues"></div>
+    </div>
+  </section>
+
+  <section class="view" id="v-notes" aria-label="내 메모">
+    <div class="scroll">
+      <div class="vh"><h1>내 메모</h1></div>
+      <div class="sec">10.23 · FRANCESCO PUPPI</div>
+      <div class="note">
+        <p class="q">내가 마지막으로 힘들었던 러닝에서, 나는 고통과 어떻게 협상했나?</p>
+        <div class="stance"><span id="st-agree">동의하는 원칙</span><span id="st-doubt">의문이 드는 점</span></div>
+        <div class="body ph" id="note-body">아직 메모가 없습니다.</div>
+        <button type="button" class="go" id="note-go">카드에서 쓰기 →</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" id="v-read" aria-label="카드 읽기">
+    <div class="wrap" id="wrap" data-mode="both" data-interp="on">
+      <div class="head">
+        <button type="button" class="back" id="back" aria-label="홈으로">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>
+        <div class="ctrls">
+          <div class="mode" role="group" aria-label="영문 원문 보기">
+            <button type="button" id="m-both" aria-pressed="true">영문</button>
+            <button type="button" id="m-ko" aria-pressed="false">숨김</button>
+          </div>
+          <div class="mode" role="group" aria-label="해석 보기">
+            <button type="button" id="i-on" aria-pressed="true">해석</button>
+            <button type="button" id="i-off" aria-pressed="false">숨김</button>
+          </div>
+        </div>
+      </div>
+      <div class="segs" id="segs" role="group" aria-label="카드 위치"></div>
+      <div class="deck" id="deck" tabindex="0" aria-label="카드 덱. 좌우 방향키나 밀어서 넘깁니다."></div>
+      <div class="nav">
+        <button type="button" class="step" id="prev">← 이전</button>
+        <span class="count" id="count"></span>
+        <button type="button" class="step" id="next">다음 →</button>
+      </div>
+    </div>
+  </section>
+
+  <nav class="tabs" aria-label="하단 메뉴">
+    <button type="button" class="tab" data-go="home" aria-current="page">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 19l6-10 4 6 2-3 6 7z"/><circle cx="17" cy="6" r="1.6"/></svg><span>오늘</span></button>
+    <button type="button" class="tab" data-go="archive">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="5" rx="1"/><rect x="4" y="11" width="16" height="5" rx="1"/><path d="M4 19h16"/></svg><span>지난 호</span></button>
+    <button type="button" class="tab" data-go="notes">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M14 7l3 3"/></svg><span>내 메모</span></button>
+  </nav>
+</div>
+
+<script>
+(function () {
+  var EP = "https://www.podbean.com/ew/dir-s722k-2f5f4746";
+  var LK = "에피소드 페이지";
+/*CARDS*/
+
+  var N = cards.length;
+  var PKEY = "trailapp-progress-v1";
+  var MKEY = "trailcard-puppi-v1";
+  var app = document.getElementById("app");
+  var deck = document.getElementById("deck");
+  var segsEl = document.getElementById("segs");
+  var countEl = document.getElementById("count");
+  var prev = document.getElementById("prev");
+  var next = document.getElementById("next");
+  var wrap = document.getElementById("wrap");
+  var GAP = 12;
+  var cur = 0;
+  var prog = { max: -1, last: 0 };
+
+  try { var pr = JSON.parse(localStorage.getItem(PKEY) || "null"); if (pr) { prog.max = pr.max; prog.last = pr.last; } } catch (e) {}
+  function saveProg() { try { localStorage.setItem(PKEY, JSON.stringify(prog)); } catch (e) {} }
+
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  function link(url, text) { return '<a href="' + url + '" target="_blank" rel="noopener">' + text + ' ↗</a>'; }
+  function paras(arr) { return arr.map(function (p) { return '<p>' + p + '</p>'; }).join(""); }
+
+  /* ---------- reader: cards ---------- */
+  cards.forEach(function (c, i) {
+    var el = document.createElement("article");
+    el.className = "card";
+    el.setAttribute("aria-label", (i + 1) + "번째 카드, 전체 " + N + "장");
+
+    if (c.cover) {
+      el.className = "card cover";
+      el.setAttribute("aria-label", "표지");
+      el.innerHTML =
+        '<p class="cv-kick">TRAIL RUNNING · PODCAST</p>' +
+        '<h2 class="cv-title" lang="en">' + c.en + '</h2>' +
+        '<p class="cv-ko">' + c.ko + '</p>' +
+        '<p class="cv-who"><b>' + c.who + '</b></p>' +
+        '<p class="cv-q">' + c.question + '</p>' +
+        '<ol class="flow">' + c.flow.map(function (f, k) {
+          return '<li><span class="n">' + (k + 1) + '</span><span class="t">' + f[0] + '</span><span class="d">' + f[1] + '</span></li>';
+        }).join("") + '</ol>' +
+        '<p class="cv-hint">' + link(c.url, "에피소드 페이지") + '<span>옆으로 넘겨 시작 →</span></p>';
+      deck.appendChild(el);
+      return;
+    }
+
+    var h = '<div class="meta"><span class="no">' + pad(i) + '</span><span class="ttl">' + c.title + '</span>' +
+      (c.stage ? '<span class="stage">' + c.stage + '</span>' : '') + '</div>';
+
+    if (c.memo) {
+      h += '<h2 class="cover-q" style="font-size:clamp(21px,5.4vw,26px)">내가 마지막으로 힘들었던 러닝에서, 나는 고통과 어떻게 협상했나?</h2>' +
+        '<div class="chips" role="group" aria-label="내 입장">' +
+        '<button type="button" class="chip" data-stance="agree" aria-pressed="false">동의하는 원칙</button>' +
+        '<button type="button" class="chip" data-stance="doubt" aria-pressed="false">의문이 드는 점</button></div>' +
+        '<textarea id="memo" placeholder="떠오른 생각을 적어 두세요."></textarea>' +
+        '<span class="saved" id="saved" aria-live="polite"></span>';
+      el.innerHTML = h;
+      deck.appendChild(el);
+      return;
+    }
+
+    if (c.bridge) h += '<p class="bridge">' + c.bridge + '</p>';
+    h += '<div class="orig"><p class="lab">ORIGINAL</p><p class="q" lang="en">' + c.orig.text + '</p>' +
+      '<p class="by">' + c.orig.by + ' · ' + link(c.orig.url, c.orig.link) + '</p>' +
+      '<p class="ko">' + c.ko + '</p></div>';
+    if (c.terms && c.terms.length) {
+      h += '<ul class="terms" aria-label="용어">' + c.terms.map(function (t) {
+        return '<li><b lang="en">' + t[0] + '</b><span>' + t[1] + '</span></li>';
+      }).join("") + '</ul>';
+    }
+    h += '<div class="expl"><div class="lab2">설명</div>' + paras(c.expl);
+    h += '<div class="tags">' + c.tags.map(function (t) {
+      var w = /불분명|보완/.test(t);
+      return '<span class="tag' + (w ? ' warn' : '') + '">' + t + '</span>';
+    }).join("") + '</div></div>';
+    if (c.interp) {
+      h += '<div class="interp"><div class="lab2">해석 <small>제 생각이며 원본에 없는 내용</small></div>' + paras(c.interp) + '</div>';
+    }
+    if (c.nextlead) h += '<p class="nextlead"><b>→</b> ' + c.nextlead + '</p>';
+    el.innerHTML = h;
+    deck.appendChild(el);
+  });
+
+  var segs = [];
+  cards.forEach(function (c, i) {
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "seg";
+    b.setAttribute("aria-label", (i + 1) + "번째 카드로 이동: " + c.title);
+    b.innerHTML = "<i></i>";
+    b.addEventListener("click", function () { go(i); });
+    segsEl.appendChild(b); segs.push(b);
+  });
+
+  function reduced() { return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches; }
+  function go(i, instant) {
+    i = Math.max(0, Math.min(N - 1, i));
+    deck.scrollTo({ left: i * (deck.clientWidth + GAP), behavior: (instant || reduced()) ? "auto" : "smooth" });
+    paint(i);
+  }
+  function paint(i) {
+    cur = i;
+    segs.forEach(function (b, k) {
+      b.classList.toggle("on", k <= i);
+      b.classList.toggle("cur", k === i);
+    });
+    countEl.textContent = (i + 1) + " / " + N;
+    prev.disabled = i === 0;
+    next.disabled = i === N - 1;
+    prog.last = i;
+    if (i > prog.max) prog.max = i;
+    saveProg();
+  }
+  deck.addEventListener("scroll", function () {
+    if (!deck.clientWidth) return;
+    var i = Math.round(deck.scrollLeft / (deck.clientWidth + GAP));
+    if (i !== cur) paint(Math.max(0, Math.min(N - 1, i)));
+  }, { passive: true });
+  window.addEventListener("resize", function () { if (app.getAttribute("data-view") === "read") deck.scrollLeft = cur * (deck.clientWidth + GAP); });
+  prev.addEventListener("click", function () { go(cur - 1); });
+  next.addEventListener("click", function () { go(cur + 1); });
+  deck.addEventListener("keydown", function (e) {
+    if (e.key === "ArrowRight") { e.preventDefault(); go(cur + 1); }
+    if (e.key === "ArrowLeft") { e.preventDefault(); go(cur - 1); }
+  });
+
+  var mBoth = document.getElementById("m-both"), mKo = document.getElementById("m-ko");
+  function setMode(m) {
+    wrap.setAttribute("data-mode", m);
+    mBoth.setAttribute("aria-pressed", m === "both" ? "true" : "false");
+    mKo.setAttribute("aria-pressed", m === "ko" ? "true" : "false");
+  }
+  mBoth.addEventListener("click", function () { setMode("both"); });
+  mKo.addEventListener("click", function () { setMode("ko"); });
+  var iOn = document.getElementById("i-on"), iOff = document.getElementById("i-off");
+  function setInterp(v) {
+    wrap.setAttribute("data-interp", v);
+    iOn.setAttribute("aria-pressed", v === "on" ? "true" : "false");
+    iOff.setAttribute("aria-pressed", v === "off" ? "true" : "false");
+  }
+  iOn.addEventListener("click", function () { setInterp("on"); });
+  iOff.addEventListener("click", function () { setInterp("off"); });
+
+  /* ---------- memo (shared with 내 메모 화면) ---------- */
+  var memo = document.getElementById("memo");
+  var saved = document.getElementById("saved");
+  var stanceBtns = Array.prototype.slice.call(document.querySelectorAll("[data-stance]"));
+  var state = { memo: "", stance: "" };
+  try {
+    var raw = localStorage.getItem(MKEY);
+    if (raw) { var o = JSON.parse(raw); state.memo = o.memo || ""; state.stance = o.stance || ""; }
+  } catch (e) {}
+  memo.value = state.memo;
+  function paintStance() {
+    stanceBtns.forEach(function (b) { b.setAttribute("aria-pressed", b.getAttribute("data-stance") === state.stance ? "true" : "false"); });
+  }
+  paintStance();
+  var timer = null;
+  function persist() {
+    var ok = true;
+    try { localStorage.setItem(MKEY, JSON.stringify(state)); } catch (e) { ok = false; }
+    saved.textContent = ok ? "이 브라우저에 저장했습니다." : "이 화면에서는 저장되지 않습니다. 창을 닫으면 사라집니다.";
+  }
+  memo.addEventListener("input", function () {
+    state.memo = memo.value; saved.textContent = "";
+    clearTimeout(timer); timer = setTimeout(persist, 500);
+  });
+  stanceBtns.forEach(function (b) {
+    b.addEventListener("click", function () {
+      var v = b.getAttribute("data-stance");
+      state.stance = state.stance === v ? "" : v;
+      paintStance(); persist();
+    });
+  });
+
+  /* ---------- app shell ---------- */
+  var views = { home: "v-home", archive: "v-archive", notes: "v-notes", read: "v-read" };
+  var tabs = Array.prototype.slice.call(document.querySelectorAll(".tab"));
+  function show(name) {
+    Object.keys(views).forEach(function (k) { document.getElementById(views[k]).classList.toggle("on", k === name); });
+    app.setAttribute("data-view", name);
+    tabs.forEach(function (t) {
+      if (t.getAttribute("data-go") === name) t.setAttribute("aria-current", "page"); else t.removeAttribute("aria-current");
+    });
+    if (name === "home") renderHome();
+    if (name === "archive") renderArchive();
+    if (name === "notes") renderNotes();
+    if (name === "read") requestAnimationFrame(function () { go(prog.last || 0, true); });
+  }
+  tabs.forEach(function (t) { t.addEventListener("click", function () { show(t.getAttribute("data-go")); }); });
+  document.getElementById("back").addEventListener("click", function () { show("home"); });
+
+  function openReader(fromStart) { if (fromStart) { prog.last = 0; } show("read"); }
+
+  var d = new Date();
+  var wd = ["일", "월", "화", "수", "목", "금", "토"][d.getDay()];
+  document.getElementById("today").textContent = pad(d.getMonth() + 1) + "." + pad(d.getDate()) + " " + wd;
+
+  function renderHome() {
+    var pg = document.getElementById("hero-pg");
+    var bars = document.getElementById("hero-bars");
+    var started = prog.max >= 0;
+    pg.hidden = !started;
+    if (started) {
+      bars.innerHTML = cards.map(function (c, i) { return '<i class="' + (i <= prog.max ? 'f' : '') + '"></i>'; }).join("");
+      document.getElementById("hero-count").textContent = (prog.max + 1) + " / " + N;
+    }
+    document.getElementById("hero-cta-t").textContent = started ? "이어 읽기" : "읽기";
+    requestAnimationFrame(layoutStack);
+  }
+  document.getElementById("hero-cta").addEventListener("click", function () { show("read"); });
+
+
+  /* ---------- home: 가운데 오늘 호, 위아래 호는 흐리게 ---------- */
+  var stack = document.getElementById("stack");
+  var boxes = Array.prototype.slice.call(stack.querySelectorAll(".ibox"));
+  function fade() {
+    var h = stack.clientHeight;
+    var mid = stack.scrollTop + h / 2;
+    boxes.forEach(function (b) {
+      var c = b.offsetTop + b.offsetHeight / 2;
+      var f = Math.min(Math.abs(c - mid) / 400, 1);
+      b.style.opacity = String(1 - 0.62 * f);
+      b.style.transform = "scale(" + (1 - 0.06 * f) + ")";
+      b.style.pointerEvents = f > 0.5 ? "none" : "";
+    });
+  }
+  function centerOn(b, smooth) {
+    var h = stack.clientHeight;
+    stack.scrollTo({ top: b.offsetTop + b.offsetHeight / 2 - h / 2, behavior: smooth && !reduced() ? "smooth" : "auto" });
+  }
+  function layoutStack() {
+    var h = stack.clientHeight;
+    if (!h) return;
+    var pad = Math.max(0, (h - boxes[0].offsetHeight) / 2);
+    stack.style.paddingBlock = pad + "px";
+    centerOn(boxes[1], false);
+    fade();
+  }
+  stack.addEventListener("scroll", fade, { passive: true });
+  boxes.forEach(function (b) {
+    b.addEventListener("click", function (e) {
+      if (e.target.closest("button")) return;
+      centerOn(b, true);
+    });
+  });
+  window.addEventListener("resize", function () { if (app.getAttribute("data-view") === "home") layoutStack(); });
+
+  var filter = "all";
+  function renderArchive() {
+    var started = prog.max >= 0;
+    var done = prog.max >= N - 1;
+    var show1 = filter === "all" || (filter === "ing" && started && !done) || (filter === "done" && done);
+    var box = document.getElementById("issues");
+    if (!show1) { box.innerHTML = '<div class="empty">해당하는 호가 없습니다.</div>'; return; }
+    var pct = started ? Math.round(((prog.max + 1) / N) * 100) : 0;
+    var badge = !started ? '' : (done ? '<span class="badge done">완료</span>' : '<span class="badge">읽는 중</span>');
+    box.innerHTML = '<button type="button" class="issue" id="issue-1"><span class="thumb"><em lang="en">Logic, Pain…</em></span>' +
+      '<span class="ib"><span class="top"><span class="dt">10.23 금</span>' + badge + '</span>' +
+      '<span class="tt">논리, 고통, 그리고 울트라 러닝의 현실</span><span class="by">Francesco Puppi</span>' +
+      '<span class="bar"><i><b style="width:' + pct + '%"></b></i><span>' + (started ? (prog.max + 1) : 0) + ' / ' + N + '</span></span></span></button>';
+    document.getElementById("issue-1").addEventListener("click", function () { show("read"); });
+  }
+  Array.prototype.forEach.call(document.querySelectorAll(".fchip"), function (b) {
+    b.addEventListener("click", function () {
+      filter = b.getAttribute("data-f");
+      Array.prototype.forEach.call(document.querySelectorAll(".fchip"), function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+      renderArchive();
+    });
+  });
+
+  function renderNotes() {
+    var body = document.getElementById("note-body");
+    if (state.memo) { body.textContent = state.memo; body.classList.remove("ph"); }
+    else { body.textContent = "아직 메모가 없습니다."; body.classList.add("ph"); }
+    document.getElementById("st-agree").className = state.stance === "agree" ? "on" : "";
+    document.getElementById("st-doubt").className = state.stance === "doubt" ? "on" : "";
+  }
+  document.getElementById("note-go").addEventListener("click", function () { prog.last = N - 1; show("read"); });
+
+  paint(0); prog.last = prog.last || 0;
+  renderHome();
+})();
+</script>

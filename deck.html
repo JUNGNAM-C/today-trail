@@ -1,0 +1,515 @@
+<title>오늘의 트레일</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600&family=Newsreader:ital,wght@1,500&family=Noto+Serif+KR:wght@600;700&display=swap">
+<style>
+/* Layout: 카드 한 장 = 앞 카드와의 연결 문장 → 영어 원문 → 한국어 번역 → 용어 → 푸피 1인칭 설명 → 해석(노란 칸) → 다음 카드로 이어지는 문장 */
+:root {
+  --bg: #EEF1EE;
+  --surface: #FFFFFF;
+  --ink: #16201B;
+  --muted: #5A675F;
+  --line: #D2D9D3;
+  --quote-bg: #E4EAE6;
+  --accent: #D61F69;
+  --accent-ink: #FFFFFF;
+  --ok: #2F5D46;
+  --ok-bg: #E1EDE5;
+  --warn: #8A3B12;
+  --warn-bg: #F6E3D6;
+  --interp: #8A5A00;
+  --interp-bg: #F6EBCF;
+  --font-display: "Noto Serif KR", "Nanum Myeongjo", "Apple SD Gothic Neo", serif;
+  --font-quote: "Newsreader", Georgia, "Times New Roman", serif;
+  --font-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0F1512; --surface: #17201B; --ink: #E6ECE7; --muted: #98A69D; --line: #2A3830;
+    --quote-bg: #1F2B25; --accent: #FF5C9A; --accent-ink: #1A0A12; --ok: #7FD6A0; --ok-bg: #1D3226;
+    --warn: #F0B48F; --warn-bg: #3A2517;
+    --interp: #E8BC52; --interp-bg: #33290F; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0F1512; --surface: #17201B; --ink: #E6ECE7; --muted: #98A69D; --line: #2A3830;
+  --quote-bg: #1F2B25; --accent: #FF5C9A; --accent-ink: #1A0A12; --ok: #7FD6A0; --ok-bg: #1D3226;
+  --warn: #F0B48F; --warn-bg: #3A2517;
+  --interp: #E8BC52; --interp-bg: #33290F; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--font-body); font-size: 15px; line-height: 1.75;
+  padding-block: 18px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  -webkit-text-size-adjust: 100%;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+.wrap { max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+a { color: var(--accent); text-underline-offset: 3px; }
+button { font: inherit; }
+a:focus-visible, button:focus-visible, textarea:focus-visible, .deck:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 14px; }
+.head h1 { margin: 0; font-family: var(--font-display); font-size: 18px; line-height: 1.4; }
+.head .sub { font-size: 12.5px; color: var(--muted); font-family: var(--font-data); }
+.ctrls { display: flex; flex-wrap: wrap; gap: 8px; }
+.mode { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; background: var(--surface); }
+.mode button { appearance: none; border: 0; background: none; color: var(--muted); padding: 5px 13px; cursor: pointer; font-size: 13px; }
+.mode button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+
+.segs { display: flex; gap: 4px; }
+.seg { flex: 1; height: 22px; padding: 0; appearance: none; border: 0; background: none; cursor: pointer; display: flex; align-items: center; }
+.seg i { display: block; width: 100%; height: 4px; border-radius: 2px; background: var(--line); transition: background .2s; }
+.seg.on i { background: var(--accent); }
+.seg.cur i { height: 6px; }
+
+.deck { display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
+.deck::-webkit-scrollbar { display: none; }
+.card { flex: 0 0 100%; min-width: 0; scroll-snap-align: center; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px; display: flex; flex-direction: column; gap: 16px; }
+.meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.meta .no { font-family: var(--font-data); font-size: 12.5px; color: var(--accent); font-weight: 500; }
+.meta .ttl { font-size: 12px; letter-spacing: .1em; font-weight: 600; color: var(--muted); }
+.meta .stage { margin-left: auto; font-size: 11.5px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 0 9px; }
+
+.bridge { margin: 0; font-size: 13.5px; color: var(--muted); border-left: 3px solid var(--accent); padding-left: 10px; max-width: 60ch; }
+
+.orig { background: var(--quote-bg); border-radius: 8px; padding: 16px 16px 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.orig .lab { font-family: var(--font-data); font-size: 11px; letter-spacing: .14em; color: var(--muted); margin: 0; }
+.orig .q { font-family: var(--font-quote); font-style: italic; font-weight: 500; font-size: clamp(20px, 5.2vw, 26px); line-height: 1.38; margin: 0; overflow-wrap: anywhere; text-wrap: balance; }
+.orig .by { font-size: 12.5px; color: var(--muted); margin: 0; }
+.orig .ko { margin: 0; padding-top: 10px; border-top: 1px solid var(--line); font-weight: 600; font-size: 16px; line-height: 1.6; text-wrap: balance; }
+.orig .ko small { display: block; font-weight: 500; font-size: 11px; letter-spacing: .12em; color: var(--muted); margin-bottom: 2px; font-family: var(--font-data); }
+.terms { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; font-size: 13.5px; }
+.terms li { display: flex; flex-wrap: wrap; gap: 2px 8px; }
+.terms b { font-family: var(--font-quote); font-style: italic; font-weight: 500; font-size: 15px; }
+
+.expl { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.expl p { margin: 0; max-width: 60ch; }
+.lab2 { font-weight: 600; letter-spacing: .12em; font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
+.lab2 small { font-weight: 400; letter-spacing: 0; font-size: 12px; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px 8px; }
+.tag { font-size: 11.5px; font-weight: 600; letter-spacing: .03em; padding: 1px 8px; border-radius: 3px; background: var(--ok-bg); color: var(--ok); }
+.tag.warn { background: var(--warn-bg); color: var(--warn); }
+
+.interp { background: var(--interp-bg); border-radius: 8px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.interp .lab2 { color: var(--interp); }
+.interp p { margin: 0; max-width: 60ch; }
+.wrap[data-interp="off"] .interp { display: none; }
+
+.nextlead { margin: 0; font-size: 13.5px; color: var(--muted); text-align: right; max-width: 60ch; align-self: flex-end; }
+.nextlead b { color: var(--accent); font-weight: 600; }
+
+.cover-q { font-family: var(--font-display); font-weight: 700; font-size: clamp(24px, 6.2vw, 32px); line-height: 1.4; letter-spacing: -.01em; margin: 0; text-wrap: balance; }
+.flow { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 0; counter-reset: f; }
+.flow li { display: grid; grid-template-columns: 26px 1fr; gap: 0 8px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 14px; }
+.flow li:first-child { border-top: 0; }
+.flow .n { font-family: var(--font-data); font-size: 12.5px; color: var(--accent); padding-top: 2px; }
+.flow .t { font-weight: 600; }
+.flow .d { color: var(--muted); font-size: 13px; grid-column: 2; }
+
+.card.cover { background: var(--ink); color: var(--bg); border-color: var(--ink); padding: 26px 22px 20px; gap: 18px; justify-content: space-between; position: relative; overflow: hidden; }
+.card.cover::before { content: ""; position: absolute; right: -60px; top: -60px; width: 190px; height: 190px; border-radius: 50%; background: var(--accent); opacity: .9; }
+.card.cover > * { position: relative; }
+.cv-kick { margin: 0; font-family: var(--font-data); font-size: 11.5px; letter-spacing: .18em; opacity: .75; }
+.cv-title { margin: 28px 0 0; font-family: var(--font-quote); font-style: italic; font-weight: 500; font-size: clamp(32px, 9vw, 44px); line-height: 1.12; letter-spacing: -.01em; text-wrap: balance; max-width: 15ch; }
+.cv-ko { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 17px; line-height: 1.5; }
+.cv-who { margin: 0; display: flex; flex-wrap: wrap; gap: 2px 12px; align-items: baseline; font-size: 13.5px; }
+.cv-who b { font-weight: 600; letter-spacing: .02em; }
+.cv-who span { opacity: .7; font-family: var(--font-data); font-size: 12px; }
+.cv-q { margin: 4px 0 0; padding: 12px 0; border-top: 1px solid currentColor; border-bottom: 1px solid currentColor; border-color: color-mix(in srgb, currentColor 30%, transparent); font-family: var(--font-display); font-weight: 600; font-size: 15.5px; line-height: 1.6; text-wrap: balance; }
+.card.cover .flow li { border-top-color: color-mix(in srgb, currentColor 22%, transparent); }
+.card.cover .flow .n { color: var(--accent); }
+.card.cover .flow .d { color: inherit; opacity: .7; }
+.cv-hint { margin: 0; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 12.5px; }
+.cv-hint a { color: inherit; }
+.cv-hint span { opacity: .75; }
+
+.wrap[data-mode="ko"] .orig .q,
+.wrap[data-mode="ko"] .orig .lab { display: none; }
+.wrap[data-mode="ko"] .orig .ko { border-top: 0; padding-top: 0; }
+
+.nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.nav button.step { appearance: none; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 999px; padding: 8px 18px; cursor: pointer; }
+.nav button.step:disabled { opacity: .35; cursor: default; }
+.nav .count { font-family: var(--font-data); font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { appearance: none; background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; cursor: pointer; font-size: 13.5px; }
+.chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+.saved { font-size: 12.5px; color: var(--muted); min-height: 1.4em; }
+.rules { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+.rules p { margin: 0; }
+
+@media (prefers-reduced-motion: reduce) { .seg i { transition: none; } }
+@media (max-width: 420px) { .card { padding: 14px; } }
+</style>
+
+<main class="wrap" id="wrap" data-mode="both" data-interp="on">
+  <div class="head">
+    <div>
+      <h1>오늘의 트레일</h1>
+      <div class="sub">논리, 고통, 그리고 울트라 러닝의 현실</div>
+    </div>
+    <div class="ctrls">
+      <div class="mode" role="group" aria-label="영문 원문 보기">
+        <button type="button" id="m-both" aria-pressed="true">영문 보이기</button>
+        <button type="button" id="m-ko" aria-pressed="false">영문 숨기기</button>
+      </div>
+      <div class="mode" role="group" aria-label="해석 보기">
+        <button type="button" id="i-on" aria-pressed="true">해석 보기</button>
+        <button type="button" id="i-off" aria-pressed="false">해석 숨김</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="segs" id="segs" role="group" aria-label="카드 위치"></div>
+  <div class="deck" id="deck" tabindex="0" aria-label="카드 덱. 좌우 방향키나 밀어서 넘깁니다."></div>
+
+  <div class="nav">
+    <button type="button" class="step" id="prev">← 이전</button>
+    <span class="count" id="count"></span>
+    <button type="button" class="step" id="next">다음 →</button>
+  </div>
+</main>
+
+<script>
+(function () {
+  var EP = "https://www.podbean.com/ew/dir-s722k-2f5f4746";
+  var LK = "에피소드 페이지";
+
+  /* 첨부 오디오를 음성 인식(핵심 구간은 small.en)으로 옮겨 읽은 내용만 싣는다. 시각은 오디오 기준.
+     expl은 푸피가 말한 내용을 1인칭으로 옮긴 정리이며 직접 인용이 아니다. 해석은 interp에 따로 둔다. */
+  var cards = [
+    {
+      cover: true,
+      title: "표지",
+      en: "Logic, Pain, and the Reality of Ultra Running",
+      ko: "논리, 고통, 그리고 울트라 러닝의 현실",
+      who: "Francesco Puppi",
+      url: EP,
+      question: "100마일의 고통을 영웅담이 아니라 논리로 바라보면 무엇이 보일까?",
+      flow: [
+        ["깊이 들어간다는 것", "going mental이 무슨 뜻인지에서 출발합니다."],
+        ["가장 깊은 순간", "웨스턴 스테이츠 선두에서 울었던 때, 그 고통을 버티게 한 이유와 방법입니다."],
+        ["고통의 정체와 태도", "고통이 무엇인지, 고통을 대하는 태도가 어떻게 바뀌었는지입니다."],
+        ["사회의 서사와 결론", "고난을 찬양하는 서사에 대한 생각과 푸피가 내린 결론입니다."],
+        ["남는 것", "고통이 지나간 뒤에 무엇을 기억하려 하는지입니다."]
+      ]
+    },
+    {
+      stage: "출발", title: "Going mental",
+      bridge: "이 대화의 이름이자 푸피가 가장 먼저 답한 질문입니다.",
+      orig: { text: "trying to go beyond the surface level narrative that many times we tell ourselves", by: "푸피 · 03:27", url: EP, link: LK },
+      ko: "스스로에게 자주 들려주는 겉핥기식 이야기 너머로 가 보려는 것.",
+      terms: [["going mental", "이 팟캐스트의 이름. 푸피의 뜻풀이는 ‘하는 일 속으로 더 깊이 들어가기’입니다."]],
+      expl: [
+        "저에게 going mental(더 깊이 들어가기)은 달리기든 다른 일이든 지금 하는 일 속으로 더 깊이 들어가 보려는 것입니다. 우리가 스스로에게 들려주고 남들에게서도 듣는 겉핥기식 이야기 너머로 가서, 운동선수로 산다는 것, 목표를 위해 일하고 높은 수준으로 훈련한다는 것이 어떤 일인지 뿌리까지 보려는 것입니다.",
+        "거기에는 큰 가능성이 있다고 생각합니다. 제 안에 아직 쓰지 않은 가능성에 닿을 수 있기 때문입니다. 다만 그러려면 강점뿐 아니라 두려움과 약점, 더 깊은 감정까지 마주해야 하고, 그걸 해내면 정말 강력합니다."
+      ],
+      tags: ["전사 확인함"],
+      nextlead: "그렇다면 가장 깊이 들어간 순간은 어땠을까요? 웨스턴 스테이츠 100에서의 장면으로 갑니다."
+    },
+    {
+      stage: "가장 깊은 순간", title: "협상",
+      bridge: "깊이 들어간다는 말이 가장 극단으로 간 장면입니다.",
+      orig: { text: "[ultra] running is a negotiation with yourself and with pain", by: "푸피 · 38:45 (00:14 예고편에도 나옴). 전사에서 ultra가 ‘called’로 인식되어 [ ]로 보완했습니다.", url: EP, link: LK },
+      ko: "울트라 러닝은 나 자신, 그리고 고통과 벌이는 협상이다.",
+      terms: [
+        ["ultra running", "42.195km보다 긴 거리를 달리는 경기. 여기서는 100마일(약 161km)입니다."],
+        ["aid station", "경기 중간의 보급 지점. 선수가 먹고 마시고 크루를 만나는 곳입니다."],
+        ["pain cave", "고통의 동굴. 고통이 가장 깊어진 상태를 부르는 말입니다."]
+      ],
+      expl: [
+        "웨스턴 스테이츠 100(진행자의 표현으로는 가장 크고 역사적인 100마일 대회)에서 선두로 달리다 보급 지점(aid station)에 들어서며 울었습니다. 왜 그랬는지 저도 잘 모릅니다. 솔직히 절박했습니다. 혼자서는 다루는 법을 모르는 어렵고 불편한 상황에 제가 저를 밀어 넣었고, 같은 속도로 계속 나아가는 게 정신적으로 불가능하게 느껴졌습니다. 너무 지쳤고 많이 아팠고, 고통은 어느 순간 거의 견딜 수 없게 됩니다.",
+        "그래서 저는 울트라 러닝을 나 자신, 그리고 고통과 벌이는 협상이라고 생각합니다. 성공하려면 그 고통의 동굴(pain cave)을 기꺼이 탐험할 수 있어야 합니다. 적어도 저에게는 그렇습니다. 일 년에 며칠, 특별한 날에만 제 안의 큰 잠재력으로 아주 깊이 파고들 수 있다는 걸 알고, 그것에 많이 기댑니다. 결승선에 들어온 뒤에는 몇 시간 동안 걷지 못해서 휠체어로 이송됐습니다."
+      ],
+      interp: [
+        "협상은 한쪽이 이기는 일이 아니라 서로 양보해서 접점을 찾는 일입니다. 푸피는 고통을 없애자는 게 아니라, 고통과 어디까지 가는지를 정하는 일로 말한다고 읽힙니다."
+      ],
+      tags: ["전사 확인함", "ultra는 문맥으로 보완"],
+      nextlead: "그 협상이 결렬되지 않게 붙들어 준 것은 무엇이었을까요? 먼저 ‘이유’입니다."
+    },
+    {
+      stage: "가장 깊은 순간", title: "왜 하는가",
+      bridge: "협상이 거의 결렬될 때, 첫 번째로 붙드는 것은 이유입니다.",
+      orig: { text: "ask yourself why you're doing what you're doing", by: "푸피 · 14:02", url: EP, link: LK },
+      ko: "내가 왜 이 일을 하고 있는지 스스로에게 물어보라.",
+      terms: [["fun / fulfillment", "fun은 재미, fulfillment는 해냈다는 충족감. 푸피는 100마일에서 필요한 건 재미가 아니라 충족감이라고 구분합니다."]],
+      expl: [
+        "솔직히 훈련이나 100마일 달리기가 재미있다(fun)고 말하기는 어렵습니다. 큰 고통과 큰 노력이 들기 때문입니다. 웨스턴 스테이츠 도중에 코치가 즐겁냐고 물었을 때 저는 대답하지 못했습니다. 코치의 뜻은 저를 이 대회를 선택한 이유로 되돌려 놓는 것이었다고 생각합니다. 그때는 80마일쯤이었고, 정말 아프고 힘들 때였습니다.",
+        "그래서 스스로 왜 하는지 묻는 게 매우 중요합니다. 그 질문에 답할 수 있다면, 기쁨과 충족감(fulfillment)은 거기서 옵니다. 제가 말하는 기쁨은 환호가 아니라, 내가 요구한 일을 해내고 지친 데서 오는 충족감입니다. 저에게 100마일은 제가 선택한 특권이고, 저 혼자의 노력이 아니라 곁에서 희생해 준 사람들과 함께한 팀의 노력이기도 합니다."
+      ],
+      tags: ["전사 확인함"],
+      nextlead: "이유가 있어도 남은 거리는 막막합니다. 실제로는 어떻게 갔을까요?"
+    },
+    {
+      stage: "가장 깊은 순간", title: "쪼개기",
+      bridge: "이유가 마음을 붙든다면, 쪼개기는 다리를 움직이는 방법입니다.",
+      orig: { text: "it really helps you break the race into smaller chunks", by: "푸피 · 36:40", url: EP, link: LK },
+      ko: "(크루는) 레이스를 더 작은 덩어리로 나누게 도와준다.",
+      terms: [["crew", "선수를 따라다니며 도와주는 지원팀. 대회에서는 정해진 보급 지점에서만 만날 수 있습니다."]],
+      expl: [
+        "크루의 역할은 아주 중요합니다. 정신적으로 레이스를 작은 덩어리로 나누게 해 주기 때문입니다. 크루는 보급 지점에서만 볼 수 있어서, 저는 ‘다음 보급 지점까지만 가자’고 스스로에게 말합니다.",
+        "100마일을 달린다는 건 거의 불가능하게 느껴집니다. 100km 지점에서 60km가 남았다면 그 거리를 어떻게 갈지 도무지 모르겠습니다. 그래서 다음 보급 지점에서 크루를 만나는 것만 보고 가고, 그다음은 그때 가서 해결합니다. 믿고 존중하는 사람을 만나면 자신감과 에너지도 얻습니다."
+      ],
+      tags: ["전사 확인함"],
+      nextlead: "이렇게 버티는 동안 제가 겪는 ‘고통’이란 정확히 무엇일까요?"
+    },
+    {
+      stage: "고통의 정체", title: "고통이란",
+      bridge: "진행자가 물었습니다. 고통은 대가인지, 증명인지, 스승인지.",
+      orig: { text: "The way you perceive and feel the pain is also crucial.", by: "푸피 · 40:09", url: EP, link: LK },
+      ko: "고통을 어떻게 인식하고 느끼는지도 결정적이다.",
+      terms: [["multifactorial", "여러 요인이 함께 작용한다는 뜻. 푸피는 고통이 신체적 원인만으로 정해지지 않는다는 의미로 씁니다."]],
+      expl: [
+        "고통이 무엇이냐는 질문에는 정의를 내리기가 어렵습니다. 고통은 여러 요인이 함께 만드는 것이라 신체적 원인만 있는 게 아니고, 제가 그것을 어떻게 인식하고 느끼는지도 결정적입니다. 고통에도 여러 ‘맛’(flavors)이 있어서, 800m 경기나 철인3종의 고통은 100마일의 고통과 다릅니다. 선수 생활 동안 여러 종류의 고통을 탐구해 봤고, 모두 아주 다릅니다.",
+        "큰 고통은 불편합니다. 그 불편한 상황을 기꺼이 지나가야 하고, 해내지 못할 수도 있다는 두려움과 마주해야 합니다. 흥미로운 건 고통이 제 성격과 감정을 드러낸다는 점입니다. 어려운 상황에서, 특히 큰 고통 아래에서 내가 어떤 사람인지 진짜로 알게 됩니다. 상황이 쉽고 통제할 수 있을 때는 결정이 쉽지만, 큰 고통 속에서는 훨씬 어렵습니다."
+      ],
+      tags: ["전사 확인함"],
+      nextlead: "이 고통은 처음엔 ‘증명’이었고, 시간이 지나 ‘스승’이 됐습니다. 그 변화가 다음 카드입니다."
+    },
+    {
+      stage: "고통의 정체", title: "존중",
+      bridge: "고통이 스승이 되자, 고통을 대하는 태도가 바뀌었습니다.",
+      orig: { text: "all for respecting my limits and my body", by: "푸피 · 43:00", url: EP, link: LK },
+      ko: "나는 한계와 내 몸을 존중하는 쪽에 전적으로 선다.",
+      terms: [
+        ["no pain, no gain", "고통 없이는 얻는 것도 없다. 고통을 감수해야 성과가 난다는 통념입니다."],
+        ["proof / teacher", "증명 / 스승. 고통이 푸피에게 어떤 의미였는지를 시기별로 가른 말입니다."]
+      ],
+      expl: [
+        "경력 초기에 고통은 저에게 증명(proof)이었습니다. 제가 독하게 버티고 고통을 감당할 수 있다는 증명입니다. 나이가 들수록 고통은 스승(teacher)이 됐습니다. 발이나 아킬레스건에서 오는 잘못된 고통을 존중하지 않으면 훨씬 큰 교훈을 얻게 되기 때문입니다. 경험이 쌓이면서 저는 고통을 존중하게 됐고, 고통에도 종류가 있으며, 늘 그 속으로 파고들 필요는 없고, 건강한 고통과 그렇지 않은 고통을 구분해야 한다는 걸 알게 됐습니다.",
+        "그래서 저는 ‘no pain, no gain’ 같은 서사에 힘을 보태고 싶지 않습니다. 제가 서는 자리는 정반대입니다. 웨스턴 스테이츠 결승선에서 휠체어로 실려 나갔다고 몸이나 한계를 존중하지 않았다는 뜻이 아닙니다. 오히려 모든 것을 쏟았고 그것이 자랑스럽습니다. 그 성과는 밀어붙여서가 아니라, 제 한계와 제가 겪던 고통과 불편함을 이해한 데서 나왔습니다."
+      ],
+      interp: [
+        "‘한계를 존중한다’는 말을 일찍 멈춘다는 뜻으로 읽기 쉽습니다. 푸피의 설명에서는 한계를 정확히 알아서 그 끝까지 간다는 뜻에 가깝다고 읽힙니다."
+      ],
+      tags: ["전사 확인함"],
+      nextlead: "그런데 사회는 이런 태도를 어떻게 바라볼까요? 진행자가 푸피의 글을 꺼냅니다."
+    },
+    {
+      stage: "사회의 서사", title: "멈춤의 명료함",
+      bridge: "개인의 태도가 사회의 이야기와 부딪히는 지점입니다.",
+      orig: { text: "refuse to appreciate the lucidity of stopping", by: "푸피가 쓴 글을 진행자가 인용 · 44:17", url: EP, link: LK },
+      ko: "(우리는) 멈추는 것의 명료함은 인정하려 하지 않는다.",
+      terms: [["lucidity", "맑고 분명한 판단력. ‘멈추는 것도 흐리멍덩한 포기가 아니라 분명한 판단일 수 있다’는 뜻으로 쓰였습니다."]],
+      expl: [
+        "진행자가 제가 쓴 글을 인용했습니다. 우리 사회는 지구력 스포츠와 고난을 이겨내는 것을 찬양하면서, 멈추는 것의 명료함은 인정하려 하지 않는다는 내용입니다.",
+        "저도 가끔 이 희생이 그만한 가치가 있는지 스스로 묻지만 답하지 못합니다. 성취가 준비 과정에서 겪은 고통과 부정적인 감정, 희생을 상쇄해 준다고는 생각하지 않습니다. 그러니 과정을 최대한 즐겁고 재미있게 만드는 편이 낫다고 봅니다. 이것은 대화 처음에 이야기한 서사, 곧 고난과 영웅적 노력과 고통을 찬양하고 감정과 약점을 감추는 것을 높이 사는 지구력 스포츠의 서사와 이어집니다."
+      ],
+      interp: [
+        "푸피는 멈춤을 약함이 아니라 판단으로 본다고 읽힙니다. 앞 카드의 ‘한계 존중’이 개인의 태도였다면, 이 카드는 그것이 사회의 이야기와 어떻게 다른지를 보여 줍니다."
+      ],
+      tags: ["전사 확인함"],
+      nextlead: "그렇다면 푸피가 찾은 대안은 무엇일까요? 결론입니다."
+    },
+    {
+      stage: "결론", title: "참고 기다리기",
+      bridge: "고난을 찬양하는 서사에 대한 푸피의 답입니다.",
+      orig: { text: "learning to hold back and being patient and respecting my body", by: "푸피 · 46:18", url: EP, link: LK },
+      ko: "참고, 인내하고, 내 몸을 존중하는 법을 배우는 것.",
+      terms: [["hold back", "힘을 아끼고 참다. 더 하고 싶은 마음을 눌러 절제하는 것입니다."]],
+      expl: [
+        "제가 하는 일에서 더 성공한 건 더 열심히 해서가 아닙니다. 참고(hold back) 인내하고 제 몸을 존중하는 법을 배워서입니다. 직관에 반하지만 이것이 현실입니다.",
+        "10~15년 전에는 스포츠, 특히 달리기와의 관계가 지금만큼 좋지 않았습니다. 지금은 회복의 중요성과 몸을 존중하는 법을 이해하고, 조금 더 현명해졌습니다."
+      ],
+      tags: ["전사 확인함"],
+      nextlead: "마지막으로, 이 모든 고통이 지나간 뒤에 무엇을 기억하려 하는지 묻습니다."
+    },
+    {
+      stage: "남는 것", title: "잊히는 고통",
+      bridge: "진행자의 마지막 질문, ‘마지막으로 going mental 한 게 언제입니까’에서 이어집니다.",
+      orig: { text: "remind myself that it was real and it was uncomfortable", by: "푸피 · 00:01:02 예고편 구간 (본편 01:00:50의 같은 발언은 인식이 흐립니다)", url: EP, link: LK },
+      ko: "그것이 실제였고 불편했다는 것을 스스로 떠올리고 싶다.",
+      terms: [["credit", "공을 인정함. 여기서는 스스로에게 ‘해냈다’고 인정해 주는 것입니다."]],
+      expl: [
+        "마지막으로 going mental(더 깊이 들어가기) 했던 때는 웨스턴 스테이츠 중이었습니다. 머릿속과 제 생각 속에서 많은 시간을 보냈고, 정말 힘들었습니다.",
+        "레이스가 끝나면 고통과 불편을 놀랄 만큼 쉽게 잊습니다. 그래도 그것이 실제였고 불편했다는 사실을 떠올리고 싶습니다. 왜냐고 물으시면, 제가 해낸 일을 스스로 인정해 주기(give myself credit) 위해서입니다. 정말 힘들었으니까요. 달리 표현할 말이 없습니다."
+      ],
+      interp: [
+        "고통을 일부러 기억하는 것은 처음의 ‘겉핥기식 이야기’로 돌아가지 않겠다는 선택으로도 읽힙니다. 다만 푸피 본인이 밝힌 이유는 자신을 인정해 주기 위해서입니다."
+      ],
+      tags: ["전사 확인함"],
+      nextlead: "여기까지가 푸피의 이야기입니다. 이제 당신의 차례입니다."
+    },
+    { title: "내 생각", memo: true }
+  ];
+
+  var N = cards.length;
+  var deck = document.getElementById("deck");
+  var segsEl = document.getElementById("segs");
+  var countEl = document.getElementById("count");
+  var prev = document.getElementById("prev");
+  var next = document.getElementById("next");
+  var wrap = document.getElementById("wrap");
+  var GAP = 12;
+  var cur = 0;
+
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  function link(url, text) { return '<a href="' + url + '" target="_blank" rel="noopener">' + text + ' ↗</a>'; }
+  function paras(arr) { return arr.map(function (p) { return '<p>' + p + '</p>'; }).join(""); }
+
+  cards.forEach(function (c, i) {
+    if (c.cover) {
+      var cv = document.createElement("article");
+      cv.className = "card cover";
+      cv.setAttribute("aria-label", "표지");
+      cv.innerHTML =
+        '<p class="cv-kick">TRAIL RUNNING · PODCAST</p>' +
+        '<h2 class="cv-title" lang="en">' + c.en + '</h2>' +
+        '<p class="cv-ko">' + c.ko + '</p>' +
+        '<p class="cv-who"><b>' + c.who + '</b></p>' +
+        '<p class="cv-q">' + c.question + '</p>' +
+        '<ol class="flow">' + c.flow.map(function (f, k) {
+          return '<li><span class="n">' + (k + 1) + '</span><span class="t">' + f[0] + '</span><span class="d">' + f[1] + '</span></li>';
+        }).join("") + '</ol>' +
+        '<p class="cv-hint">' + link(c.url, "에피소드 페이지") + '<span>옆으로 넘겨 시작 →</span></p>';
+      deck.appendChild(cv);
+      return;
+    }
+    var el = document.createElement("article");
+    el.className = "card";
+    el.setAttribute("aria-label", (i + 1) + "번째 카드, 전체 " + N + "장");
+    var h = '<div class="meta"><span class="no">' + pad(i) + '</span><span class="ttl">' + c.title + '</span>' +
+      (c.stage ? '<span class="stage">' + c.stage + '</span>' : '') + '</div>';
+
+    if (c.memo) {
+      h += '<h2 class="cover-q" style="font-size:clamp(21px,5.4vw,26px)">내가 마지막으로 힘들었던 러닝에서, 나는 고통과 어떻게 협상했나?</h2>' +
+        '<div class="chips" role="group" aria-label="내 입장">' +
+        '<button type="button" class="chip" data-stance="agree" aria-pressed="false">동의하는 원칙</button>' +
+        '<button type="button" class="chip" data-stance="doubt" aria-pressed="false">의문이 드는 점</button></div>' +
+        '<textarea id="memo" placeholder="떠오른 생각을 적어 두세요."></textarea>' +
+        '<span class="saved" id="saved" aria-live="polite"></span>' ;
+      el.innerHTML = h;
+      deck.appendChild(el);
+      return;
+    }
+
+    if (c.bridge) h += '<p class="bridge">' + c.bridge + '</p>';
+
+    h += '<div class="orig"><p class="lab">ORIGINAL</p><p class="q" lang="en">' + c.orig.text + '</p>' +
+      '<p class="by">' + c.orig.by + ' · ' + link(c.orig.url, c.orig.link) + '</p>' +
+      '<p class="ko">' + c.ko + '</p></div>';
+
+    if (c.cover) {
+      h += '<h2 class="cover-q">' + c.question + '</h2>';
+      h += '<ol class="flow">' + c.flow.map(function (f, k) {
+        return '<li><span class="n">' + (k + 1) + '</span><span class="t">' + f[0] + '</span><span class="d">' + f[1] + '</span></li>';
+      }).join("") + '</ol>';
+    } else {
+      if (c.terms && c.terms.length) {
+        h += '<ul class="terms" aria-label="용어">' + c.terms.map(function (t) {
+          return '<li><b lang="en">' + t[0] + '</b><span>' + t[1] + '</span></li>';
+        }).join("") + '</ul>';
+      }
+      h += '<div class="expl"><div class="lab2">설명</div>' + paras(c.expl);
+      h += '<div class="tags">' + c.tags.map(function (t) {
+        var w = /불분명|보완/.test(t);
+        return '<span class="tag' + (w ? ' warn' : '') + '">' + t + '</span>';
+      }).join("") + '</div></div>';
+      if (c.interp) {
+        h += '<div class="interp"><div class="lab2">해석 <small>제 생각이며 원본에 없는 내용</small></div>' + paras(c.interp) + '</div>';
+      }
+    }
+    if (c.nextlead) h += '<p class="nextlead"><b>→</b> ' + c.nextlead + '</p>';
+    el.innerHTML = h;
+    deck.appendChild(el);
+  });
+
+  var segs = [];
+  cards.forEach(function (c, i) {
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "seg";
+    b.setAttribute("aria-label", (i + 1) + "번째 카드로 이동: " + c.title);
+    b.innerHTML = "<i></i>";
+    b.addEventListener("click", function () { go(i); });
+    segsEl.appendChild(b); segs.push(b);
+  });
+
+  function reduced() { return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches; }
+  function go(i) {
+    i = Math.max(0, Math.min(N - 1, i));
+    deck.scrollTo({ left: i * (deck.clientWidth + GAP), behavior: reduced() ? "auto" : "smooth" });
+    paint(i);
+  }
+  function paint(i) {
+    cur = i;
+    segs.forEach(function (b, k) {
+      b.classList.toggle("on", k <= i);
+      b.classList.toggle("cur", k === i);
+    });
+    countEl.textContent = (i + 1) + " / " + N;
+    prev.disabled = i === 0;
+    next.disabled = i === N - 1;
+  }
+  deck.addEventListener("scroll", function () {
+    var i = Math.round(deck.scrollLeft / (deck.clientWidth + GAP));
+    if (i !== cur) paint(Math.max(0, Math.min(N - 1, i)));
+  }, { passive: true });
+  window.addEventListener("resize", function () { deck.scrollLeft = cur * (deck.clientWidth + GAP); });
+  prev.addEventListener("click", function () { go(cur - 1); });
+  next.addEventListener("click", function () { go(cur + 1); });
+  deck.addEventListener("keydown", function (e) {
+    if (e.key === "ArrowRight") { e.preventDefault(); go(cur + 1); }
+    if (e.key === "ArrowLeft") { e.preventDefault(); go(cur - 1); }
+  });
+  paint(0);
+
+  var mBoth = document.getElementById("m-both"), mKo = document.getElementById("m-ko");
+  function setMode(m) {
+    wrap.setAttribute("data-mode", m);
+    mBoth.setAttribute("aria-pressed", m === "both" ? "true" : "false");
+    mKo.setAttribute("aria-pressed", m === "ko" ? "true" : "false");
+  }
+  mBoth.addEventListener("click", function () { setMode("both"); });
+  mKo.addEventListener("click", function () { setMode("ko"); });
+
+  var iOn = document.getElementById("i-on"), iOff = document.getElementById("i-off");
+  function setInterp(v) {
+    wrap.setAttribute("data-interp", v);
+    iOn.setAttribute("aria-pressed", v === "on" ? "true" : "false");
+    iOff.setAttribute("aria-pressed", v === "off" ? "true" : "false");
+  }
+  iOn.addEventListener("click", function () { setInterp("on"); });
+  iOff.addEventListener("click", function () { setInterp("off"); });
+
+  var KEY = "trailcard-puppi-v1";
+  var memo = document.getElementById("memo");
+  var saved = document.getElementById("saved");
+  var stanceBtns = Array.prototype.slice.call(document.querySelectorAll("[data-stance]"));
+  var state = { memo: "", stance: "" };
+  try {
+    var raw = localStorage.getItem(KEY);
+    if (raw) { var o = JSON.parse(raw); state.memo = o.memo || ""; state.stance = o.stance || ""; }
+  } catch (e) {}
+  memo.value = state.memo;
+  function paintStance() {
+    stanceBtns.forEach(function (b) { b.setAttribute("aria-pressed", b.getAttribute("data-stance") === state.stance ? "true" : "false"); });
+  }
+  paintStance();
+  var timer = null;
+  function persist() {
+    var ok = true;
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { ok = false; }
+    saved.textContent = ok ? "이 브라우저에 저장했습니다." : "이 화면에서는 저장되지 않습니다. 창을 닫으면 사라집니다.";
+  }
+  memo.addEventListener("input", function () {
+    state.memo = memo.value; saved.textContent = "";
+    clearTimeout(timer); timer = setTimeout(persist, 500);
+  });
+  stanceBtns.forEach(function (b) {
+    b.addEventListener("click", function () {
+      var v = b.getAttribute("data-stance");
+      state.stance = state.stance === v ? "" : v;
+      paintStance(); persist();
+    });
+  });
+})();
+</script>
