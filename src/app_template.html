@@ -194,8 +194,16 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
 .xcard .cv-q { border-top-color: rgba(255,255,255,.3); border-bottom-color: rgba(255,255,255,.3); }
 .xcard .card.cover .flow li { border-top-color: rgba(255,255,255,.22); }
 .xpg { position: absolute; bottom: 22px; right: 22px; z-index: 3; font-family: var(--font-data); font-size: 15px; font-weight: 500; letter-spacing: .1em; color: #FF5C9A; }
-.qbtn { position: fixed; left: 50%; bottom: 96px; transform: translateX(-50%); z-index: 30; display: none; appearance: none; border: 1.5px solid #FF3D9A; background: #000; color: #FF8FC0; border-radius: 999px; min-height: 48px; padding: 0 20px; font-weight: 600; font-size: 15px; box-shadow: 0 0 14px rgba(255,61,154,.55); cursor: pointer; }
-.qbtn.on { display: inline-flex; align-items: center; }
+.qpanel { position: fixed; left: 50%; bottom: 92px; transform: translateX(-50%); z-index: 30; display: none; width: min(92vw, 420px); background: #000; color: #F0F0F0; border: 1.5px solid #FF3D9A; border-radius: 18px; padding: 12px 14px; box-shadow: 0 0 16px rgba(255,61,154,.55); flex-direction: column; gap: 10px; }
+.qpanel.on { display: flex; }
+.qrow { display: flex; align-items: center; gap: 8px; }
+.qseg { display: inline-flex; border: 1px solid #444; border-radius: 999px; overflow: hidden; }
+.qseg button { appearance: none; border: 0; background: none; color: #A8A8A8; min-height: 40px; min-width: 52px; padding: 0 14px; font-size: 15px; cursor: pointer; }
+.qseg button[aria-pressed="true"] { background: #FF5C9A; color: #1A0A12; font-weight: 700; }
+.qcount { margin-left: auto; font-family: var(--font-data); font-size: 13.5px; color: #A8A8A8; }
+.qcount.over { color: #FF8F8F; }
+.qsave { appearance: none; border: 0; background: #FF5C9A; color: #1A0A12; border-radius: 999px; min-height: 48px; font-weight: 700; font-size: 16px; cursor: pointer; }
+.qsave:disabled { background: #333; color: #777; cursor: default; }
 .qtoast { position: fixed; left: 50%; bottom: 150px; transform: translateX(-50%); z-index: 31; background: #111; color: #F0F0F0; border: 1px solid #333; border-radius: 12px; padding: 10px 16px; font-size: 14px; display: none; max-width: 86vw; text-align: center; }
 .qtoast.on { display: block; }
 .exp { margin-top: auto; display: flex; flex-direction: column; gap: 8px; }
@@ -1004,60 +1012,86 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
     }).catch(function (e) { saveBtn.disabled = false; expSt.textContent = "이미지를 만들지 못했습니다: " + e; });
   });
 
-  /* ---------- 선택한 글만 이미지로 저장 (정사각형 인용 카드) ---------- */
-  var qBtn = document.createElement("button"); qBtn.type = "button"; qBtn.className = "qbtn"; qBtn.textContent = "선택 영역 이미지로 저장";
+  /* ---------- 선택한 글만 이미지로 저장 (3:4 고정, 글자 크기 소/중/대, 500자 제한) ---------- */
+  var Q_MAX = 500, Q_SIZES = { s: 10.5, m: 14, l: 18 }, Q_LABEL = { s: "소", m: "중", l: "대" }, qSize = "m";
+  try { var sv = localStorage.getItem("trail.qsize"); if (sv && Q_SIZES[sv]) qSize = sv; } catch (e) {}
+  var qPanel = document.createElement("div"); qPanel.className = "qpanel"; qPanel.setAttribute("role", "group"); qPanel.setAttribute("aria-label", "선택한 글 이미지 저장");
+  qPanel.innerHTML = '<div class="qrow"><div class="qseg" role="group" aria-label="글자 크기">' +
+    ["s", "m", "l"].map(function (k) { return '<button type="button" data-q="' + k + '" aria-pressed="false">' + Q_LABEL[k] + '</button>'; }).join("") +
+    '</div><span class="qcount" id="qcount" aria-live="polite"></span></div><button type="button" class="qsave" id="qsave">선택 영역 이미지로 저장</button>';
   var qToast = document.createElement("div"); qToast.className = "qtoast"; qToast.setAttribute("aria-live", "polite");
-  document.body.appendChild(qBtn); document.body.appendChild(qToast);
-  var qText = "", qIdx = 0, qTimer = null;
-  function toast(msg) { qToast.textContent = msg; qToast.classList.add("on"); clearTimeout(qTimer); qTimer = setTimeout(function () { qToast.classList.remove("on"); }, 3200); }
+  document.body.appendChild(qPanel); document.body.appendChild(qToast);
+  var qCount = qPanel.querySelector("#qcount"), qSave = qPanel.querySelector("#qsave"), qText = "", qIdx = 0, qLen = 0, qTimer = null;
+  function toast(msg) { qToast.textContent = msg; qToast.classList.add("on"); clearTimeout(qTimer); qTimer = setTimeout(function () { qToast.classList.remove("on"); }, 3600); }
+  function paintQ() {
+    Array.prototype.forEach.call(qPanel.querySelectorAll("[data-q]"), function (b) { b.setAttribute("aria-pressed", b.getAttribute("data-q") === qSize ? "true" : "false"); });
+    qCount.textContent = qLen + " / " + Q_MAX + "자"; qCount.classList.toggle("over", qLen > Q_MAX);
+    qSave.disabled = qLen > Q_MAX; qSave.textContent = qLen > Q_MAX ? "500자 이하로 선택해 주세요" : "선택 영역 이미지로 저장";
+  }
   document.addEventListener("selectionchange", function () {
     var sel = window.getSelection(), ok = false;
     if (sel && sel.rangeCount && !sel.isCollapsed && app.getAttribute("data-view") === "read") {
       var n = sel.anchorNode, el = n && (n.nodeType === 3 ? n.parentElement : n), card = el && el.closest && el.closest(".card");
       if (card && !el.closest("textarea") && !card.querySelector("#memo")) {
-        qText = sel.toString().replace(/[ \t]+/g, " ").trim(); qIdx = Array.prototype.indexOf.call(deck.children, card);
-        ok = qText.length > 1;
+        qText = sel.toString().replace(/[ \t ]+/g, " ").replace(/ ?\n ?/g, "\n").replace(/\n{2,}/g, "\n").trim();
+        qIdx = Array.prototype.indexOf.call(deck.children, card); qLen = Array.from(qText).length;
+        ok = qLen > 1;
       }
     }
-    qBtn.classList.toggle("on", ok);
+    if (ok) paintQ();
+    qPanel.classList.toggle("on", ok);
   });
-  ["mousedown", "touchstart"].forEach(function (ev) { qBtn.addEventListener(ev, function (e) { e.preventDefault(); }, { passive: false }); });
-  function makeQuote(text, c0, c) {
-    var TOT = 390, M = 22, W = TOT - 2 * M, scale = 1080 / TOT, P = 28, TW = W - 2 * P;
-    var mc = document.createElement("canvas").getContext("2d");
-    var paras = text.split(/\n+/).map(function (s) { return s.trim(); }).filter(Boolean);
-    mc.font = "500 21px " + SANS;
-    var lines = []; paras.forEach(function (s, i) { if (i) lines.push(""); wrapText(mc, s, TW).forEach(function (l) { lines.push(l); }); });
-    var LH = 35, textH = lines.reduce(function (a, l) { return a + (l === "" ? 14 : LH); }, 0);
-    var attr = [plain(c0.ko), plain(c0.who) + (c.title ? " · " + plain(c.title) : "")];
-    var H = Math.max(W, 214 + textH + 34 + 46 + 56);
-    var f = document.createElement("canvas"); f.width = Math.round(TOT * scale); f.height = Math.round((H + 2 * M) * scale);
+  ["mousedown", "touchstart"].forEach(function (ev) { qPanel.addEventListener(ev, function (e) { e.preventDefault(); }, { passive: false }); });
+  qPanel.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-q]");
+    if (b) { qSize = b.getAttribute("data-q"); try { localStorage.setItem("trail.qsize", qSize); } catch (er) {} paintQ(); }
+  });
+  var Q_W = 346, Q_H = 476, Q_TOP = 50, Q_BOTTOM = 92, Q_PAD = 28;         /* 카드 346×476 + 바깥 여백 22 → 이미지 390×520 = 1080×1440 (3:4) */
+  function qLayout(ctx, text, px) {
+    ctx.font = "500 " + px + "px " + SANS;
+    var TW = Q_W - 2 * Q_PAD, lh = Math.round(px * 1.62), lines = [];
+    text.split("\n").forEach(function (s, i) { if (i) lines.push(null); wrapText(ctx, s, TW).forEach(function (l) { lines.push(l); }); });
+    var h = lines.reduce(function (a, l) { return a + (l === null ? Math.round(lh * 0.45) : lh); }, 0);
+    return { lines: lines, lh: lh, h: h };
+  }
+  function qFit(ctx, text, want) {                                             /* 고른 크기로 안 들어가면 소 크기까지 줄인다 */
+    var avail = Q_H - Q_TOP - Q_BOTTOM, px = want, L = qLayout(ctx, text, px);
+    while (L.h > avail && px > Q_SIZES.s) { px = Math.max(Q_SIZES.s, +(px - 0.5).toFixed(1)); L = qLayout(ctx, text, px); }
+    L.px = px; L.shrunk = px < want; return L;
+  }
+  function makeQuote(text, c0, c, level) {
+    var TOT = 390, M = 22, scale = 1080 / TOT, OUTH = Math.round(Q_H + 2 * M);
+    var mc = document.createElement("canvas").getContext("2d"), L = qFit(mc, text, Q_SIZES[level]);
+    var f = document.createElement("canvas"); f.width = 1080; f.height = 1440;
     var x = f.getContext("2d"); x.fillStyle = "#000"; x.fillRect(0, 0, f.width, f.height);
     x.save(); x.scale(scale, scale); x.translate(M, M);
-    var rr = function (i) { x.beginPath(); x.roundRect ? x.roundRect(i, i, W - 2 * i, H - 2 * i, 22) : x.rect(i, i, W - 2 * i, H - 2 * i); };
+    var rr = function (i) { x.beginPath(); x.roundRect ? x.roundRect(i, i, Q_W - 2 * i, Q_H - 2 * i, 22) : x.rect(i, i, Q_W - 2 * i, Q_H - 2 * i); };
     rr(0); x.save(); x.clip();
-    var art = document.createElement("canvas"); drawArt(art, { motif: ART.today.motif, seed: ART.today.seed }, W, 340); x.drawImage(art, 0, 0, W, 340);
-    x.textBaseline = "middle"; x.font = "500 21px " + SANS; x.fillStyle = "#F0F0F0";
-    var y = 214; lines.forEach(function (l) { if (l === "") { y += 14; return; } x.fillText(l, P, y + LH / 2); y += LH; });
-    y += 34; x.font = "400 13.5px " + SANS; x.fillStyle = "#A8A8A8";
-    attr.forEach(function (l, i) { x.fillText(wrapText(x, l, TW)[0] || l, P, y + 12 + i * 22); });
-    x.textBaseline = "alphabetic"; x.textAlign = "right"; x.font = "500 13px " + MONO; x.fillStyle = "#FF5C9A"; x.fillText("오늘의 트레일", W - 22, H - 22); x.textAlign = "left";
+    var art = document.createElement("canvas"); drawArt(art, { motif: ART.today.motif, seed: ART.today.seed }, Q_W, 340);
+    x.globalAlpha = 0.22; x.drawImage(art, 0, 0, Q_W, 340); x.globalAlpha = 1;
+    x.textBaseline = "middle"; x.font = "500 " + L.px + "px " + SANS; x.fillStyle = "#F0F0F0";
+    var y = Q_TOP + Math.max(0, (Q_H - Q_TOP - Q_BOTTOM - L.h) / 2); L.lines.forEach(function (l) { if (l === null) { y += Math.round(L.lh * 0.45); return; } x.fillText(l, Q_PAD, y + L.lh / 2); y += L.lh; });
+    var ay = Q_H - Q_BOTTOM + 30; x.font = "400 13px " + SANS; x.fillStyle = "#A8A8A8";
+    [plain(c0.ko), plain(c0.who) + (c.title ? " · " + plain(c.title) : "")].forEach(function (l, i) { x.fillText(wrapText(x, l, Q_W - 2 * Q_PAD)[0] || l, Q_PAD, ay + i * 20); });
+    x.textBaseline = "alphabetic"; x.textAlign = "right"; x.font = "500 13px " + MONO; x.fillStyle = "#FF5C9A"; x.fillText("오늘의 트레일", Q_W - 22, Q_H - 22); x.textAlign = "left";
     x.restore();
     x.save(); x.strokeStyle = "#FF3D9A"; x.shadowColor = "#FF3D9A"; x.lineWidth = 3; x.shadowBlur = 22; rr(1.5); x.stroke(); x.shadowBlur = 8; rr(1.5); x.stroke(); x.restore();
     x.restore();
-    return new Promise(function (res) { f.toBlob(function (b) { res(new File([b], "오늘의트레일_선택문장.png", { type: "image/png" })); }, "image/png"); });
+    return new Promise(function (res) { f.toBlob(function (b) { res({ file: new File([b], "오늘의트레일_선택문장.png", { type: "image/png" }), shrunk: L.shrunk }); }, "image/png"); });
   }
-  qBtn.addEventListener("click", function () {
+  qSave.addEventListener("click", function () {
     var text = qText, c = cards[qIdx] || {}, c0 = cards[0];
-    if (!text) return;
+    if (!text || qLen > Q_MAX) return;
     toast("이미지 만드는 중…");
-    var ready = Promise.all(['500 21px "IBM Plex Sans KR"', '400 13px "IBM Plex Sans KR"', '400 13px "IBM Plex Mono"'].map(function (f) { return document.fonts.load(f, "가Aa1"); })).catch(function () {});
-    ready.then(function () { return makeQuote(text, c0, c); }).then(function (file) {
-      var share = navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share;
-      if (share) { navigator.share({ files: [file], title: "오늘의 트레일" }).catch(function () {}); toast("저장 창에서 '이미지 저장'을 선택하세요."); return; }
-      var a = document.createElement("a"); a.href = URL.createObjectURL(file); a.download = file.name; document.body.appendChild(a); a.click(); a.remove(); toast("이미지를 내려받았습니다.");
+    var ready = Promise.all(['500 14px "IBM Plex Sans KR"', '400 13px "IBM Plex Sans KR"', '400 13px "IBM Plex Mono"'].map(function (f) { return document.fonts.load(f, "가Aa1"); })).catch(function () {});
+    ready.then(function () { return makeQuote(text, c0, c, qSize); }).then(function (r) {
+      var note = r.shrunk ? " (글이 길어 크기를 자동으로 줄였습니다)" : "";
+      var share = navigator.canShare && navigator.canShare({ files: [r.file] }) && navigator.share;
+      if (share) { navigator.share({ files: [r.file], title: "오늘의 트레일" }).catch(function () {}); toast("저장 창에서 '이미지 저장'을 선택하세요." + note); return; }
+      var a = document.createElement("a"); a.href = URL.createObjectURL(r.file); a.download = r.file.name; document.body.appendChild(a); a.click(); a.remove(); toast("이미지를 내려받았습니다." + note);
     }).catch(function (e) { toast("이미지를 만들지 못했습니다: " + e); });
   });
+
   /* 넓은 화면(PC)에서는 폰 틀을 화면 높이에 맞춰 키운다 */
   function fitScreen() {
     var z = 1, w = window.innerWidth, h = window.innerHeight;
