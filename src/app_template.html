@@ -79,6 +79,10 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, .deck:focus-visib
 .stack .ibox.focus { box-shadow: 0 0 0 1.5px #FF3D9A, 0 0 10px 1px rgba(255,61,154,.75), 0 0 26px 4px rgba(255,61,154,.4); }
 .ibox { flex: none; height: 372px; scroll-snap-align: center; scroll-snap-stop: always; will-change: transform, opacity; transform-origin: center; }
 .ibox.today { height: 558px; }
+.hero.ibox.today > .art { height: 300px; }
+.hero.ibox.sm > .art { height: 175px; }
+#issues, #notes-list { display: flex; flex-direction: column; gap: 10px; }
+#notes-list .sec { margin-top: 8px; }
 .ibox .en-title { margin-top: auto; font-size: 30px; }
 .ibox.today .en-title { font-size: 32px; max-width: 16ch; }
 .ibox.sm .en-title { font-size: 21px; max-width: 20ch; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
@@ -225,18 +229,21 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
     <div class="stack" id="stack" tabindex="0" aria-label="호 목록. 위아래로 넘깁니다.">
 
       <article class="hero ibox sm" data-i="0" aria-label="이전 호">
-        <div class="kick">PREVIOUS</div>
-        <div class="en-title" lang="en" style="margin-top:auto">No earlier issue</div>
-        <div class="ko-title">이전 호가 없습니다</div>
-        <div class="who">첫 호입니다</div>
-      </article>
-
-      <article class="hero ibox today" data-i="1" aria-label="오늘 호">
-        <canvas class="art" data-art="today" aria-hidden="true"></canvas>
-        <div class="kick">TRAIL RUNNING · PODCAST</div>
+        <canvas class="art" data-art="ep1" aria-hidden="true"></canvas>
+        <div class="kick">PREVIOUS · 10.23</div>
         <div class="en-title" lang="en">Logic, Pain, and the Reality of Ultra Running</div>
         <div class="ko-title">논리, 고통, 그리고 울트라 러닝의 현실</div>
         <div class="who">Francesco Puppi</div>
+        <button type="button" class="cta" id="prev-cta"><span id="prev-cta-t">읽기</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+      </article>
+
+      <article class="hero ibox today" data-i="1" aria-label="오늘 호">
+        <canvas class="art" data-art="ep2" aria-hidden="true"></canvas>
+        <div class="kick">TRAIL RUNNING · PODCAST</div>
+        <div class="en-title" lang="en">Kílian Jornet on What We Can Learn From Pushing Our Bodies to Extremes</div>
+        <div class="ko-title">킬리안 조르넷: 몸을 극한까지 밀어붙여 배울 수 있는 것</div>
+        <div class="who">Kílian Jornet · NYT The Interview</div>
         <div class="pg" id="hero-pg" hidden><div class="bars" id="hero-bars"></div><span id="hero-count"></span></div>
         <button type="button" class="cta" id="hero-cta"><span id="hero-cta-t">읽기</span>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
@@ -251,14 +258,6 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
       </article>
 
       <article class="hero ibox sm" data-i="3" aria-label="다음 호 후보">
-        <canvas class="art" data-art="c2" aria-hidden="true"></canvas>
-        <div class="kick">NEXT · 후보</div>
-        <div class="en-title" lang="en">The Interview: Kílian Jornet on What We Can Learn From Pushing Our Bodies to Extremes</div>
-        <div class="ko-title">킬리안 조르넷: 몸을 극한까지 밀어붙여 배울 수 있는 것</div>
-        <div class="who">NYT The Interview · 43분</div>
-      </article>
-
-      <article class="hero ibox sm" data-i="4" aria-label="다음 호 후보">
         <canvas class="art" data-art="c3" aria-hidden="true"></canvas>
         <div class="kick">NEXT · 후보</div>
         <div class="en-title" lang="en">Why Ultrarunning Feels Necessary</div>
@@ -284,13 +283,7 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
   <section class="view" id="v-notes" aria-label="내 메모">
     <div class="scroll">
       <div class="vh"><h1>내 메모</h1></div>
-      <div class="sec">10.23 · FRANCESCO PUPPI</div>
-      <div class="note">
-        <p class="q">내가 마지막으로 힘들었던 러닝에서, 나는 고통과 어떻게 협상했나?</p>
-        <div class="stance"><span id="st-agree">동의하는 원칙</span><span id="st-doubt">의문이 드는 점</span></div>
-        <div class="body ph" id="note-body">아직 메모가 없습니다.</div>
-        <button type="button" class="go" id="note-go">카드에서 쓰기 →</button>
-      </div>
+      <div id="notes-list"></div>
     </div>
   </section>
 
@@ -335,10 +328,35 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
   var EP = "https://www.podbean.com/ew/dir-s722k-2f5f4746";
   var LK = "에피소드 페이지";
 /*CARDS*/
+/*CARDS2*/
+
+  /* ---------- 호(issue) 목록. 읽는 호는 주소 해시(#ep=1)로 정하고, 기본은 가장 최신 호 ---------- */
+  var ISSUES = {
+    1: { cards: cards1, pkey: "trailapp-progress-v1", mkey: "trailcard-puppi-v1", date: "10.23 금", thumb: "Logic, Pain…", ko: "논리, 고통, 그리고 울트라 러닝의 현실", who: "Francesco Puppi", sec: "FRANCESCO PUPPI", q: "내가 마지막으로 힘들었던 러닝에서, 나는 고통과 어떻게 협상했나?" },
+    2: { cards: cards2, pkey: "trailapp-progress-ep2", mkey: "trailcard-jornet-v1", date: "10.26 월", thumb: "Kílian Jornet…", ko: "킬리안 조르넷: 몸을 극한까지 밀어붙여 배울 수 있는 것", who: "Kílian Jornet", sec: "KÍLIAN JORNET", q: "내가 가장 한계에 가까웠던 순간, 무엇이 나를 멈추게 하거나 계속 가게 했나?" }
+  };
+  var EPI = /ep=1/.test(location.hash) ? 1 : 2;
+  var OPEN_AT_LOAD = /open/.test(location.hash);
+  var cards = ISSUES[EPI].cards;
 
   var N = cards.length;
-  var PKEY = "trailapp-progress-v1";
-  var MKEY = "trailcard-puppi-v1";
+  var PKEY = ISSUES[EPI].pkey;
+  var MKEY = ISSUES[EPI].mkey;
+  function readProg(k) {
+    if (k === EPI) return prog;
+    try { var o = JSON.parse(localStorage.getItem(ISSUES[k].pkey) || "null"); if (o) return { max: o.max, last: o.last }; } catch (e) {}
+    return { max: -1, last: 0 };
+  }
+  function readMemo(k) {
+    if (k === EPI) return state;
+    try { var o = JSON.parse(localStorage.getItem(ISSUES[k].mkey) || "null"); if (o) return { memo: o.memo || "", stance: o.stance || "" }; } catch (e) {}
+    return { memo: "", stance: "" };
+  }
+  function openIssue(k) {
+    if (k === EPI) { show("read"); return; }
+    location.hash = "ep=" + k + "&open";
+    location.reload();
+  }
   var app = document.getElementById("app");
   var deck = document.getElementById("deck");
   var segsEl = document.getElementById("segs");
@@ -385,7 +403,7 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
       (c.stage ? '<span class="stage">' + c.stage + '</span>' : '') + '</div>';
 
     if (c.memo) {
-      h += '<h2 class="cover-q" style="font-size:clamp(21px,5.4vw,26px)">내가 마지막으로 힘들었던 러닝에서, 나는 고통과 어떻게 협상했나?</h2>' +
+      h += '<h2 class="cover-q" style="font-size:clamp(21px,5.4vw,26px)">' + (c.q || ISSUES[EPI].q) + '</h2>' +
         '<div class="chips" role="group" aria-label="내 입장">' +
         '<button type="button" class="chip" data-stance="agree" aria-pressed="false">동의하는 원칙</button>' +
         '<button type="button" class="chip" data-stance="doubt" aria-pressed="false">의문이 드는 점</button></div>' +
@@ -537,16 +555,19 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
   function renderHome() {
     var pg = document.getElementById("hero-pg");
     var bars = document.getElementById("hero-bars");
-    var started = prog.max >= 0;
+    var p2 = readProg(2), n2 = ISSUES[2].cards.length;
+    var started = p2.max >= 0;
     pg.hidden = !started;
     if (started) {
-      bars.innerHTML = cards.map(function (c, i) { return '<i class="' + (i <= prog.max ? 'f' : '') + '"></i>'; }).join("");
-      document.getElementById("hero-count").textContent = (prog.max + 1) + " / " + N;
+      bars.innerHTML = ISSUES[2].cards.map(function (c, i) { return '<i class="' + (i <= p2.max ? 'f' : '') + '"></i>'; }).join("");
+      document.getElementById("hero-count").textContent = (p2.max + 1) + " / " + n2;
     }
     document.getElementById("hero-cta-t").textContent = started ? "이어 읽기" : "읽기";
+    document.getElementById("prev-cta-t").textContent = readProg(1).max >= 0 ? "이어 읽기" : "읽기";
     requestAnimationFrame(layoutStack);
   }
-  document.getElementById("hero-cta").addEventListener("click", function () { show("read"); });
+  document.getElementById("hero-cta").addEventListener("click", function () { openIssue(2); });
+  document.getElementById("prev-cta").addEventListener("click", function () { openIssue(1); });
 
 
 
@@ -556,11 +577,12 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
      motif: shards cracks spikes hexdots tri diamond dots slash xmark plus cells hex
      seed: 무작위 모양, chaos: 파괴가 흐트러지는 정도, start/end: 면이 유지되다가 완전히 사라지는 세로 구간 */
   var ART = {
-    today: { motif: "terrain", seed: 2026 },
+    ep1:   { motif: "terrain", seed: 2026 },
+    ep2:   { motif: "dots6",  seed: 43 },
     c1:    { motif: "flow",   seed: 618 },
-    c2:    { motif: "dots6",  seed: 43 },
     c3:    { motif: "scrawl", seed: 295 }
   };
+  ART.today = ART["ep" + EPI];
   /* 선형 흑백 패턴 5종: burst(파동 다발) loft(곡면 선) dots6(점 메시) scrawl(스크리블) flow(흐르는 선). seed로 무작위 변형 */
   var LINE_MOTIFS = { terrain: 1, burst: 1, loft: 1, dots6: 1, scrawl: 1, flow: 1 };
   function rng(s) { s = s | 0; return function () { s = (s + 0x6D2B79F5) | 0; var t = Math.imul(s ^ (s >>> 15), 1 | s); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
@@ -831,7 +853,7 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
   function drawBoxArt() {
     Array.prototype.forEach.call(document.querySelectorAll("canvas.art[data-art]"), function (cv) {
       var b = cv.parentNode;
-      if (b.clientWidth) drawArt(cv, ART[cv.getAttribute("data-art")], b.clientWidth, b.clientHeight);
+      if (b.clientWidth) drawArt(cv, ART[cv.getAttribute("data-art")], b.clientWidth, b.classList.contains("today") ? 300 : (b.classList.contains("sm") ? 175 : b.clientHeight));
     });
   }
   function drawCoverArt() {
@@ -880,18 +902,24 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
 
   var filter = "all";
   function renderArchive() {
-    var started = prog.max >= 0;
-    var done = prog.max >= N - 1;
-    var show1 = filter === "all" || (filter === "ing" && started && !done) || (filter === "done" && done);
-    var box = document.getElementById("issues");
-    if (!show1) { box.innerHTML = '<div class="empty">해당하는 호가 없습니다.</div>'; return; }
-    var pct = started ? Math.round(((prog.max + 1) / N) * 100) : 0;
-    var badge = !started ? '' : (done ? '<span class="badge done">완료</span>' : '<span class="badge">읽는 중</span>');
-    box.innerHTML = '<button type="button" class="issue" id="issue-1"><span class="thumb"><em lang="en">Logic, Pain…</em></span>' +
-      '<span class="ib"><span class="top"><span class="dt">10.23 금</span>' + badge + '</span>' +
-      '<span class="tt">논리, 고통, 그리고 울트라 러닝의 현실</span><span class="by">Francesco Puppi</span>' +
-      '<span class="bar"><i><b style="width:' + pct + '%"></b></i><span>' + (started ? (prog.max + 1) : 0) + ' / ' + N + '</span></span></span></button>';
-    document.getElementById("issue-1").addEventListener("click", function () { show("read"); });
+    var box = document.getElementById("issues"), html = "", any = false;
+    [2, 1].forEach(function (k) {
+      var I = ISSUES[k], pr = readProg(k), n = I.cards.length;
+      var started = pr.max >= 0, done = pr.max >= n - 1;
+      var ok = filter === "all" || (filter === "ing" && started && !done) || (filter === "done" && done);
+      if (!ok) return;
+      any = true;
+      var pct = started ? Math.round(((pr.max + 1) / n) * 100) : 0;
+      var badge = !started ? '' : (done ? '<span class="badge done">완료</span>' : '<span class="badge">읽는 중</span>');
+      html += '<button type="button" class="issue" data-k="' + k + '"><span class="thumb"><em lang="en">' + I.thumb + '</em></span>' +
+        '<span class="ib"><span class="top"><span class="dt">' + I.date + '</span>' + badge + '</span>' +
+        '<span class="tt">' + I.ko + '</span><span class="by">' + I.who + '</span>' +
+        '<span class="bar"><i><b style="width:' + pct + '%"></b></i><span>' + (started ? (pr.max + 1) : 0) + ' / ' + n + '</span></span></span></button>';
+    });
+    box.innerHTML = any ? html : '<div class="empty">해당하는 호가 없습니다.</div>';
+    Array.prototype.forEach.call(box.querySelectorAll(".issue"), function (b) {
+      b.addEventListener("click", function () { openIssue(Number(b.getAttribute("data-k"))); });
+    });
   }
   Array.prototype.forEach.call(document.querySelectorAll(".fchip"), function (b) {
     b.addEventListener("click", function () {
@@ -902,16 +930,30 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
   });
 
   function renderNotes() {
-    var body = document.getElementById("note-body");
-    if (state.memo) { body.textContent = state.memo; body.classList.remove("ph"); }
-    else { body.textContent = "아직 메모가 없습니다."; body.classList.add("ph"); }
-    document.getElementById("st-agree").className = state.stance === "agree" ? "on" : "";
-    document.getElementById("st-doubt").className = state.stance === "doubt" ? "on" : "";
+    var list = document.getElementById("notes-list"), html = "";
+    [2, 1].forEach(function (k) {
+      var I = ISSUES[k], m = readMemo(k);
+      html += '<div class="sec">' + I.date.split(" ")[0] + ' · ' + I.sec + '</div><div class="note">' +
+        '<p class="q">' + I.q + '</p>' +
+        '<div class="stance"><span class="' + (m.stance === "agree" ? "on" : "") + '">동의하는 원칙</span><span class="' + (m.stance === "doubt" ? "on" : "") + '">의문이 드는 점</span></div>' +
+        '<div class="body' + (m.memo ? '' : ' ph') + '"></div>' +
+        '<button type="button" class="go" data-k="' + k + '">카드에서 쓰기 →</button></div>';
+    });
+    list.innerHTML = html;
+    var bodies = list.querySelectorAll(".body");
+    [2, 1].forEach(function (k, i) { var m = readMemo(k); bodies[i].textContent = m.memo || "아직 메모가 없습니다."; });
+    Array.prototype.forEach.call(list.querySelectorAll(".go"), function (b) {
+      b.addEventListener("click", function () {
+        var k = Number(b.getAttribute("data-k"));
+        if (k === EPI) { prog.last = N - 1; show("read"); } else { location.hash = "ep=" + k + "&open&memo"; location.reload(); }
+      });
+    });
   }
-  document.getElementById("note-go").addEventListener("click", function () { prog.last = N - 1; show("read"); });
 
-  paint(0); prog.last = prog.last || 0;
+  paint(0);
+  if (OPEN_AT_LOAD) { if (/memo/.test(location.hash)) prog.last = N - 1; try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {} }
   renderHome();
+  if (OPEN_AT_LOAD) show("read");
 
   /* ---------- 전체 카드 이미지로 저장 (카드마다 글이 잘리지 않고 가득 차게, 1080px 폭) ---------- */
   var saveBtn = document.getElementById("saveall"), expSt = document.getElementById("exp-st"), exported = null;
