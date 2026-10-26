@@ -159,9 +159,9 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, .deck:focus-visib
 .orig .q { font-family: var(--font-quote); font-weight: 500; font-size: clamp(20px, 5.2vw, 24px); line-height: 1.38; margin: 0; overflow-wrap: anywhere; text-wrap: balance; }
 .orig .by { font-size: 14px; color: var(--muted); margin: 0; }
 .orig .ko { margin: 0; padding-top: 10px; border-top: 1px solid var(--line); font-weight: 600; font-size: 16px; line-height: 1.6; text-wrap: balance; }
-.terms { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; font-size: 15px; }
+.terms { margin: 4px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 3px; font-size: 13px; line-height: 1.6; color: var(--muted); }
 .terms li { display: flex; flex-wrap: wrap; gap: 2px 8px; }
-.terms b { font-family: var(--font-quote); font-weight: 500; font-size: 15px; }
+.terms b { font-family: var(--font-quote); font-weight: 600; font-size: 13px; color: var(--ink); }
 .expl { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .expl p { margin: 0; max-width: 60ch; }
 .lab2 { font-weight: 600; letter-spacing: .12em; font-size: 13.5px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
@@ -743,12 +743,12 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
     h += '<div class="orig"><p class="lab">ORIGINAL</p><p class="q" lang="en">' + c.orig.text + '</p>' +
       '<p class="by">' + c.orig.by + ' · ' + link(c.orig.url, c.orig.link) + '</p>' +
       '<p class="ko">' + c.ko + '</p></div>';
+    h += '<div class="expl">' + paras(c.expl);
     if (c.terms && c.terms.length) {
       h += '<ul class="terms" aria-label="용어">' + c.terms.map(function (t) {
         return '<li><b lang="en">' + t[0] + '</b><span>' + t[1] + '</span></li>';
       }).join("") + '</ul>';
     }
-    h += '<div class="expl"><div class="lab2">설명</div>' + paras(c.expl);
     h += '<div class="tags">' + c.tags.map(function (t) {
       var w = /불분명|보완/.test(t);
       return '<span class="tag' + (w ? ' warn' : '') + '">' + t + '</span>';
