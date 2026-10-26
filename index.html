@@ -1156,7 +1156,7 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
     var ctx = cv.getContext("2d"); ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, w, h); ctx.lineCap = "round"; ctx.lineJoin = "round";
     var R = rng(a.seed), rr = function (lo, hi) { return lo + (hi - lo) * R(); };
-    var ry = Math.min(h * 0.2, 115), cy = 44 + ry * 1.1, cx = w / 2, hw = w * (a.motif === 'dots6' ? 0.44 : 0.72), TAU = Math.PI * 2, i, j;
+    var ry = Math.min(h * 0.2, 115), cy = 44 + ry * 1.1, cx = w / 2, hw = w * (a.motif === 'dots6' ? 0.44 : (a.motif === 'terrain' ? 0.38 : 0.46)), TAU = Math.PI * 2, i, j;
     function line(pts, lw, al) { ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]); for (var q = 1; q < pts.length; q++) ctx.lineTo(pts[q][0], pts[q][1]); ctx.lineWidth = lw; ctx.strokeStyle = "rgba(255,255,255," + al + ")"; ctx.stroke(); }
     if (a.motif === "terrain") {
       /* 지형 등고선: 뒤에서 앞으로 쌓인 가로선이 봉우리를 따라 솟는다 */
@@ -1189,17 +1189,18 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
         line(pts, lwb, rr(0.35, 0.95));
       }
     } else if (a.motif === "loft") {
-      var bez = function () { var c = []; for (var q = 0; q < 4; q++) c.push([rr(-1, 1) * hw, rr(-1.35, 1.35) * ry]); return c; };
-      var P = bez(), Q = bez(); P[0][0] = -hw; Q[0][0] = -hw * rr(0.6, 1); P[3][0] = hw * rr(0.5, 1); Q[3][0] = hw;
-      var B = function (c, s) { var u = 1 - s; return [u * u * u * c[0][0] + 3 * u * u * s * c[1][0] + 3 * u * s * s * c[2][0] + s * s * s * c[3][0], u * u * u * c[0][1] + 3 * u * u * s * c[1][1] + 3 * u * s * s * c[2][1] + s * s * s * c[3][1]]; };
-      var m = 26 + (R() * 8 | 0), tw = rr(0.15, 0.5);
+      /* 두 레일(P 위, Q 아래)을 항상 위아래 순서로 유지하고 그 사이를 같은 간격으로 채운다 → 선이 겹치거나 뭉치지 않는다. x는 ±hw 안쪽 */
+      var xs = [-hw, -hw / 3 + rr(-0.08, 0.08) * hw, hw / 3 + rr(-0.08, 0.08) * hw, hw];
+      var P = [], gp = [];
+      for (i = 0; i < 4; i++) { P.push([xs[i], rr(-0.9, 0.9) * ry]); gp.push(ry * (i === 0 || i === 3 ? rr(0.45, 0.7) : rr(0.55, 1.1))); }
+      var Bz = function (c, s, k) { var u = 1 - s; return u * u * u * c[0][k] + 3 * u * u * s * c[1][k] + 3 * u * s * s * c[2][k] + s * s * s * c[3][k]; };
+      var Bg = function (s) { var u = 1 - s; return u * u * u * gp[0] + 3 * u * u * s * gp[1] + 3 * u * s * s * gp[2] + s * s * s * gp[3]; };
+      var m = 26 + (R() * 6 | 0), bend = rr(-0.35, 0.35) * ry, bf = rr(1, 2);
       for (i = 0; i <= m; i++) {
-        var tt = Math.min(1, Math.max(0, i / m + rr(-0.35, 0.35) / m)), pts2 = [];
-        for (var s = 0; s <= 1.0001; s += 0.01) { var p1 = B(P, s), q1 = B(Q, Math.min(1, Math.max(0, s + tw * Math.sin(s * Math.PI) * (tt - 0.5)))); pts2.push([cx + p1[0] * (1 - tt) + q1[0] * tt, cy + p1[1] * (1 - tt) + q1[1] * tt]); }
-        line(pts2, R() < 0.18 ? rr(1.4, 2.2) : rr(0.4, 1), rr(0.4, 1));
+        var tt = i / m, pts2 = [];
+        for (var s = 0; s <= 1.0001; s += 0.01) { pts2.push([cx + Bz(P, s, 0), cy + Bz(P, s, 1) + Bg(s) * tt + bend * Math.sin(Math.PI * s * bf) * Math.sin(Math.PI * tt) * Math.sin(Math.PI * s)]); }
+        line(pts2, (i % 7 === 0) ? 1.5 : 0.8, (i % 7 === 0) ? 0.95 : 0.7);
       }
-      var rn = 30 + (R() * 12 | 0);
-      for (i = 0; i <= rn; i++) { if (R() < 0.25) continue; var s2 = Math.min(1, Math.max(0, i / rn + rr(-0.4, 0.4) / rn)), pa = B(P, s2), qa = B(Q, s2); line([[cx + pa[0], cy + pa[1]], [cx + qa[0], cy + qa[1]]], rr(0.3, 0.8), rr(0.2, 0.6)); }
     } else if (a.motif === "dots6") {
       var NU = 70, NV = 34, ax = rr(0.15, 0.35), f1 = rr(1, 2.2), f2 = rr(1.2, 2.6), p1v = rr(0, TAU), p2v = rr(0, TAU), by = rr(0.3, 0.8), sh = rr(-0.6, 0.6);
       var Xp = function (u, v) { return cx + hw * ((u - 0.5) * 2 * (1 + sh * (v - 0.5)) + ax * Math.sin(TAU * (f1 * v) + p1v) * Math.sin(Math.PI * u)); };
@@ -1218,6 +1219,7 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
           var xx = R1 * Math.cos(aa * th / 2 + pp) * (0.6 + 0.4 * Math.cos(th)) + R2 * Math.cos(bb * th), yy = R1 * Math.sin(aa * th / 2) * 0.6 + R2 * Math.sin(bb * th) * 0.5;
           xx *= sx; pts3.push([cx + xx * Math.cos(rot) - yy * Math.sin(rot), cy + xx * Math.sin(rot) + yy * Math.cos(rot)]);
         }
+        var mx = 0; pts3.forEach(function (q) { mx = Math.max(mx, Math.abs(q[0] - cx)); }); if (mx > w * 0.46) { var kk = w * 0.46 / mx; pts3.forEach(function (q) { q[0] = cx + (q[0] - cx) * kk; }); }
         line(pts3, R() < 0.2 ? rr(2, 3.2) : rr(0.4, 1.4), rr(0.4, 1));
       }
     } else {                                                      /* flow: 다발이 모였다 갈라지고, 가는 선이 가로지르며, 급하게 꺾인다 */
