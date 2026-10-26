@@ -1157,8 +1157,8 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
   });
   var Q_W = 346, Q_H = 476, Q_TOP = 50, Q_BOTTOM = 196, Q_PAD = 28;         /* 카드 346×476 + 바깥 여백 22 → 이미지 390×520 = 1080×1440 (3:4) */
   function qLayout(ctx, text, px) {
-    ctx.font = "500 " + px + "px " + SANS;
-    var TW = Q_W - 2 * Q_PAD, lh = Math.round(px * 1.62), lines = [];
+    ctx.font = "400 " + px + "px " + BODYF;
+    var TW = Q_W - 2 * Q_PAD, lh = Math.round(px * 1.62 * 0.9), lines = [];
     text.split("\n").forEach(function (s, i) { if (i) lines.push(null); wrapText(ctx, s, TW).forEach(function (l) { lines.push(l); }); });
     var h = lines.reduce(function (a, l) { return a + (l === null ? Math.round(lh * 0.45) : lh); }, 0);
     return { lines: lines, lh: lh, h: h };
@@ -1182,7 +1182,7 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
     if (bot <= top) { top = 0; bot = art.height - 1; }
     var srcH = Math.min(bot - top + 1, Math.round(150 * sx)), srcY = bot - srcH + 1, dstH = srcH / sx;
     x.globalAlpha = 0.4; x.drawImage(art, 0, srcY, art.width, srcH, 0, Q_H - dstH, Q_W, dstH); x.globalAlpha = 1;
-    x.textBaseline = "middle"; x.font = "500 " + L.px + "px " + SANS; x.fillStyle = "#F0F0F0";
+    x.textBaseline = "middle"; x.font = "400 " + L.px + "px " + BODYF; x.fillStyle = "#F0F0F0";
     var y = Q_TOP + Math.max(0, (Q_H - Q_TOP - Q_BOTTOM - L.h) / 2); L.lines.forEach(function (l) { if (l === null) { y += Math.round(L.lh * 0.45); return; } x.fillText(l, Q_PAD, y + L.lh / 2); y += L.lh; });
     var ay = Q_H - Q_BOTTOM + 30; x.font = "400 13px " + SANS; x.fillStyle = "#A8A8A8";
     [plain(c0.ko), plain(c0.who) + (c.title ? " · " + plain(c.title) : "")].forEach(function (l, i) { x.fillText(wrapText(x, l, Q_W - 2 * Q_PAD)[0] || l, Q_PAD, ay + i * 20); });
@@ -1196,7 +1196,7 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
     var text = qText, c = cards[qIdx] || {}, c0 = cards[0];
     if (!text || qLen > Q_MAX) return;
     toast("이미지 만드는 중…");
-    var ready = Promise.all(['500 14px "Wanted Sans"', '400 13px "Wanted Sans"'].map(function (f) { return document.fonts.load(f, "가Aa1"); })).catch(function () {});
+    var ready = Promise.all(['500 14px "Wanted Sans"', '400 13px "Wanted Sans"', '400 20px "Chosun Nm"'].map(function (f) { return document.fonts.load(f, "가Aa1"); })).catch(function () {});
     ready.then(function () { return makeQuote(text, c0, c, qSize); }).then(function (r) {
       var note = r.shrunk ? " (글이 길어 크기를 자동으로 줄였습니다)" : "";
       var share = navigator.canShare && navigator.canShare({ files: [r.file] }) && navigator.share;
