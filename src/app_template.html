@@ -230,22 +230,21 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
     <div class="vh" style="padding: 24px 20px 8px;"><h1>오늘의 트레일</h1><span class="d" id="today"></span></div>
     <div class="stack" id="stack" tabindex="0" aria-label="호 목록. 위아래로 넘깁니다.">
 
-      <article class="hero ibox sm" data-i="0" aria-label="이전 호">
-        <canvas class="art" data-art="ep1" aria-hidden="true"></canvas>
-        <div class="kick">PREVIOUS · 10.23</div>
-        <div class="en-title" lang="en">Logic, Pain, and the Reality of Ultra Running</div>
-        <div class="ko-title">논리, 고통, 그리고 울트라 러닝의 현실</div>
-        <div class="who">Francesco Puppi</div>
-        <button type="button" class="cta" id="prev-cta"><span id="prev-cta-t">읽기</span>
+      <article class="hero ibox sm" data-i="0" aria-label="지난 호 보관함">
+        <div class="kick">LIBRARY · 보관</div>
+        <div class="en-title" lang="en">Past issues</div>
+        <div class="ko-title">지난 호 2편이 보관되어 있습니다</div>
+        <div class="who">1화 Francesco Puppi · 2화 Kílian Jornet</div>
+        <button type="button" class="cta" id="prev-cta"><span id="prev-cta-t">지난 호 열기</span>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
       </article>
 
       <article class="hero ibox today" data-i="1" aria-label="오늘 호">
-        <canvas class="art" data-art="ep2" aria-hidden="true"></canvas>
+        <canvas class="art" data-art="ep3" aria-hidden="true"></canvas>
         <div class="kick">TRAIL RUNNING · PODCAST</div>
-        <div class="en-title" lang="en">Kílian Jornet on What We Can Learn From Pushing Our Bodies to Extremes</div>
-        <div class="ko-title">킬리안 조르넷: 몸을 극한까지 밀어붙여 배울 수 있는 것</div>
-        <div class="who">Kílian Jornet · NYT The Interview</div>
+        <div class="en-title" lang="en">Kílian Jornet: Summiting The Mind Of The World’s Greatest Mountain Runner</div>
+        <div class="ko-title">킬리안 조르넷: 세계 최고의 산악 러너, 그의 마음속으로</div>
+        <div class="who">Kílian Jornet · Rich Roll Podcast #417</div>
         <div class="pg" id="hero-pg" hidden><div class="bars" id="hero-bars"></div><span id="hero-count"></span></div>
         <button type="button" class="cta" id="hero-cta"><span id="hero-cta-t">읽기</span>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
@@ -331,13 +330,17 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
   var LK = "에피소드 페이지";
 /*CARDS*/
 /*CARDS2*/
+/*CARDS3*/
 
   /* ---------- 호(issue) 목록. 읽는 호는 주소 해시(#ep=1)로 정하고, 기본은 가장 최신 호 ---------- */
   var ISSUES = {
     1: { cards: cards1, pkey: "trailapp-progress-v1", mkey: "trailcard-puppi-v1", date: "10.23 금", thumb: "Logic, Pain…", ko: "논리, 고통, 그리고 울트라 러닝의 현실", who: "Francesco Puppi", sec: "FRANCESCO PUPPI", q: "내가 마지막으로 힘들었던 러닝에서, 나는 고통과 어떻게 협상했나?" },
+    3: { cards: cards3, pkey: "trailapp-progress-ep3", mkey: "trailcard-jornet2-v1", date: "10.26 월", thumb: "Summiting…", ko: "킬리안 조르넷: 세계 최고의 산악 러너, 그의 마음속으로", who: "Kílian Jornet", sec: "KÍLIAN JORNET · RICH ROLL", q: "내가 달리는 이유를 한 문장으로 쓰면, ‘해야 해서’와 ‘하고 싶어서’ 중 무엇이 더 많은가?" },
     2: { cards: cards2, pkey: "trailapp-progress-ep2", mkey: "trailcard-jornet-v1", date: "10.26 월", thumb: "Kílian Jornet…", ko: "킬리안 조르넷: 몸을 극한까지 밀어붙여 배울 수 있는 것", who: "Kílian Jornet", sec: "KÍLIAN JORNET", q: "내가 가장 한계에 가까웠던 순간, 무엇이 나를 멈추게 하거나 계속 가게 했나?" }
   };
-  var EPI = /ep=1/.test(location.hash) ? 1 : 2;
+  var LATEST = 3;
+  var EPm = /ep=(\d+)/.exec(location.hash);
+  var EPI = EPm && ISSUES[EPm[1]] ? Number(EPm[1]) : LATEST;
   var OPEN_AT_LOAD = /open/.test(location.hash);
   var cards = ISSUES[EPI].cards;
 
@@ -557,19 +560,18 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
   function renderHome() {
     var pg = document.getElementById("hero-pg");
     var bars = document.getElementById("hero-bars");
-    var p2 = readProg(2), n2 = ISSUES[2].cards.length;
+    var p2 = readProg(LATEST), n2 = ISSUES[LATEST].cards.length;
     var started = p2.max >= 0;
     pg.hidden = !started;
     if (started) {
-      bars.innerHTML = ISSUES[2].cards.map(function (c, i) { return '<i class="' + (i <= p2.max ? 'f' : '') + '"></i>'; }).join("");
+      bars.innerHTML = ISSUES[LATEST].cards.map(function (c, i) { return '<i class="' + (i <= p2.max ? 'f' : '') + '"></i>'; }).join("");
       document.getElementById("hero-count").textContent = (p2.max + 1) + " / " + n2;
     }
     document.getElementById("hero-cta-t").textContent = started ? "이어 읽기" : "읽기";
-    document.getElementById("prev-cta-t").textContent = readProg(1).max >= 0 ? "이어 읽기" : "읽기";
     requestAnimationFrame(layoutStack);
   }
-  document.getElementById("hero-cta").addEventListener("click", function () { openIssue(2); });
-  document.getElementById("prev-cta").addEventListener("click", function () { openIssue(1); });
+  document.getElementById("hero-cta").addEventListener("click", function () { openIssue(LATEST); });
+  document.getElementById("prev-cta").addEventListener("click", function () { show("archive"); });
 
 
 
@@ -581,6 +583,7 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
   var ART = {
     ep1:   { motif: "terrain", seed: 2026 },
     ep2:   { motif: "dots6",  seed: 43 },
+    ep3:   { motif: "loft",   seed: 417 },
     c1:    { motif: "flow",   seed: 618 },
     c3:    { motif: "scrawl", seed: 295 }
   };
@@ -905,7 +908,7 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
   var filter = "all";
   function renderArchive() {
     var box = document.getElementById("issues"), html = "", any = false;
-    [2, 1].forEach(function (k) {
+    [3, 2, 1].forEach(function (k) {
       var I = ISSUES[k], pr = readProg(k), n = I.cards.length;
       var started = pr.max >= 0, done = pr.max >= n - 1;
       var ok = filter === "all" || (filter === "ing" && started && !done) || (filter === "done" && done);
@@ -933,7 +936,7 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
 
   function renderNotes() {
     var list = document.getElementById("notes-list"), html = "";
-    [2, 1].forEach(function (k) {
+    [3, 2, 1].forEach(function (k) {
       var I = ISSUES[k], m = readMemo(k);
       html += '<div class="sec">' + I.date.split(" ")[0] + ' · ' + I.sec + '</div><div class="note">' +
         '<p class="q">' + I.q + '</p>' +
@@ -943,7 +946,7 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
     });
     list.innerHTML = html;
     var bodies = list.querySelectorAll(".body");
-    [2, 1].forEach(function (k, i) { var m = readMemo(k); bodies[i].textContent = m.memo || "아직 메모가 없습니다."; });
+    [3, 2, 1].forEach(function (k, i) { var m = readMemo(k); bodies[i].textContent = m.memo || "아직 메모가 없습니다."; });
     Array.prototype.forEach.call(list.querySelectorAll(".go"), function (b) {
       b.addEventListener("click", function () {
         var k = Number(b.getAttribute("data-k"));
