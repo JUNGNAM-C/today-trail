@@ -394,7 +394,7 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
         '<ol class="flow">' + c.flow.map(function (f, k) {
           return '<li><span class="n">' + (k + 1) + '</span><span class="t">' + f[0] + '</span><span class="d">' + f[1] + '</span></li>';
         }).join("") + '</ol>' +
-        '<p class="cv-hint">' + link(c.url, "에피소드 페이지") + '<span>옆으로 넘겨 시작 →</span></p>';
+        '<p class="cv-hint">' + link(c.url, c.lk || "에피소드 페이지") + '<span>옆으로 넘겨 시작 →</span></p>';
       deck.appendChild(el);
       return;
     }
