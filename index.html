@@ -14,6 +14,7 @@
 <title>오늘의 트레일</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
+@font-face { font-family: "Chosun Nm"; font-weight: 400; font-style: normal; font-display: swap; src: url("fonts/ChosunNm.woff2") format("woff2"); }
 @font-face { font-family: "Wanted Sans"; font-weight: 400; font-style: normal; font-display: swap; src: url("fonts/WantedSans-Regular.woff2") format("woff2"); }
 @font-face { font-family: "Wanted Sans"; font-weight: 500; font-style: normal; font-display: swap; src: url("fonts/WantedSans-Medium.woff2") format("woff2"); }
 @font-face { font-family: "Wanted Sans"; font-weight: 600; font-style: normal; font-display: swap; src: url("fonts/WantedSans-SemiBold.woff2") format("woff2"); }
@@ -1536,6 +1537,17 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
   /* ---------- 전체 카드 이미지로 저장 (카드마다 글이 잘리지 않고 가득 차게, 1080px 폭) ---------- */
   var saveBtn = document.getElementById("saveall"), expSt = document.getElementById("exp-st"), exported = null;
   var SANS = '"Wanted Sans","Apple SD Gothic Neo","Malgun Gothic",sans-serif', SERIFKO = SANS, QUOTE = SANS, MONO = SANS;
+  var BODYF = '"Chosun Nm","Wanted Sans","Apple SD Gothic Neo","Malgun Gothic",serif';
+  /* 제목이 잘리지 않게: 줄 수와 단어 길이가 맞을 때까지 글자 크기를 줄인다 */
+  function fitPx(ctx, txt, weight, fam, px0, pxMin, maxW, maxLines) {
+    var px = px0;
+    for (; px > pxMin; px--) {
+      ctx.font = weight + " " + px + "px " + fam;
+      var ok = wrapText(ctx, txt, maxW).length <= maxLines && txt.split(" ").every(function (w) { return ctx.measureText(w).width <= maxW; });
+      if (ok) break;
+    }
+    return px;
+  }
   function plain(s) { var d = document.createElement("div"); d.innerHTML = String(s == null ? "" : s); return d.textContent.replace(/\s+/g, " ").trim(); }
   function wrapText(ctx, text, maxW) {
     var words = text.split(" "), lines = [], cur = "";
@@ -1568,8 +1580,10 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
       y = 24;
       line("TRAIL RUNNING · PODCAST", "400 13px " + MONO, "#B0B0B0", 18, P, TW);
       y = 205;
-      line(plain(c.en), "500 40px " + QUOTE, "#F0F0F0", 45, P, TW * 0.9); y += 14;
-      line(plain(c.ko), "700 17px " + SERIFKO, "#F0F0F0", 26, P, TW); y += 10;
+      var enT = plain(c.en), enPx = fitPx(ctx, enT, 500, QUOTE, 40, 24, TW, 5);
+      line(enT, "500 " + enPx + "px " + QUOTE, "#F0F0F0", Math.round(enPx * 1.13), P, TW); y += 14;
+      var koT = plain(c.ko), koPx = fitPx(ctx, koT, 700, SERIFKO, 17, 12, TW, 3);
+      line(koT, "700 " + koPx + "px " + SERIFKO, "#F0F0F0", Math.round(koPx * 1.5), P, TW); y += 10;
       line(plain(c.who), "600 15px " + SANS, "#F0F0F0", 24, P, TW); y += 18;
       if (draw) { ctx.fillStyle = "rgba(255,255,255,.3)"; ctx.fillRect(P, y, TW, 1); } y += 14;
       line(plain(c.question), "700 17px " + SERIFKO, "#F0F0F0", 28, P, TW); y += 14;
@@ -1583,19 +1597,21 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
       });
       return y + 64;
     }
-    line(plain(c.title), "600 15px " + SANS, "#A8A8A8", 24, P, TW); y += 12;
+    var tiT = plain(c.title), tiPx = fitPx(ctx, tiT, 600, SANS, 15, 10, TW, 1);
+    line(tiT, "600 " + tiPx + "px " + SANS, "#A8A8A8", 24, P, TW); y += 12;
     box("#161616", 0, function () {
-      line(plain(c.ko), "700 18px " + SANS, "#F0F0F0", 29, P + 16, TW - 32);
+      var kbT = plain(c.ko), kbPx = fitPx(ctx, kbT, 700, SANS, 18, 12, TW - 32, 4);
+      line(kbT, "700 " + kbPx + "px " + SANS, "#F0F0F0", Math.round(kbPx * 1.6), P + 16, TW - 32);
     }, 16);
     y += 20;
-    c.expl.forEach(function (pp) { line(plain(pp), "400 15px " + SANS, "#F0F0F0", 27, P, TW); y += 10; });
+    c.expl.forEach(function (pp) { line(plain(pp), "400 15px " + BODYF, "#F0F0F0", 24, P, TW); y += 8; });
     return y + 64;
   }
   function makeImages() {
     var TOT = 390, M = 22, W = TOT - 2 * M, scale = 1080 / TOT;
     var src = cards.filter(function (c) { return !c.memo; });
     var out = [], idx = 0;
-    var fontsReady = Promise.all(['400 15px "Wanted Sans"', '500 15px "Wanted Sans"', '600 15px "Wanted Sans"', '700 17px "Wanted Sans"'].map(function (f) { return document.fonts.load(f, "가Aa1"); })).catch(function () {});
+    var fontsReady = Promise.all(['400 15px "Wanted Sans"', '500 15px "Wanted Sans"', '600 15px "Wanted Sans"', '700 17px "Wanted Sans"', '400 15px "Chosun Nm"'].map(function (f) { return document.fonts.load(f, "가Aa1"); })).catch(function () {});
     function next() {
       if (idx >= src.length) return Promise.resolve(out);
       var c = src[idx];
