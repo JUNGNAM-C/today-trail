@@ -1155,7 +1155,7 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
     var b = e.target.closest("[data-q]");
     if (b) { qSize = b.getAttribute("data-q"); try { localStorage.setItem("trail.qsize", qSize); } catch (er) {} paintQ(); }
   });
-  var Q_W = 346, Q_H = 476, Q_TOP = 50, Q_BOTTOM = 196, Q_PAD = 28;         /* 카드 346×476 + 바깥 여백 22 → 이미지 390×520 = 1080×1440 (3:4) */
+  var Q_W = 346, Q_H = 346 * 1440 / 1080, Q_TOP = 50, Q_BOTTOM = 196, Q_PAD = 28;         /* 카드 346×476 + 바깥 여백 22 → 이미지 390×520 = 1080×1440 (3:4) */
   function qLayout(ctx, text, px) {
     ctx.font = "400 " + px + "px " + BODYF;
     var TW = Q_W - 2 * Q_PAD, lh = Math.round(px * 1.5), lines = [];
@@ -1169,13 +1169,13 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
     L.px = px; L.shrunk = px < want; return L;
   }
   function makeQuote(text, c0, c, level) {
-    var TOT = 390, M = 22, scale = 1080 / TOT, OUTH = Math.round(Q_H + 2 * M);
+    var M = 0, scale = 1080 / Q_W;
     var mc = document.createElement("canvas").getContext("2d"), L = qFit(mc, text, Q_SIZES[level]);
     var f = document.createElement("canvas"); f.width = 1080; f.height = 1440;
     var x = f.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, f.width, f.height);
     x.save(); x.scale(scale, scale); x.translate(M, M);
     var rr = function (i) { x.beginPath(); x.roundRect ? x.roundRect(i, i, Q_W - 2 * i, Q_H - 2 * i, 22) : x.rect(i, i, Q_W - 2 * i, Q_H - 2 * i); };
-    rr(0); x.save(); x.clip();
+    x.save(); x.beginPath(); x.rect(0, 0, Q_W, Q_H); x.clip();
     var art = document.createElement("canvas"); drawArt(art, { motif: ART.today.motif, seed: ART.today.seed }, Q_W, 340);
     var ad = art.getContext("2d").getImageData(0, 0, art.width, art.height).data, top = art.height, bot = 0, sx = art.width / Q_W, yy, xx;
     for (yy = 0; yy < art.height; yy++) for (xx = 0; xx < art.width; xx += 2) { var q = (yy * art.width + xx) * 4; if (ad[q] > 60 || ad[q + 1] > 60) { if (yy < top) top = yy; if (yy > bot) bot = yy; break; } }
@@ -1185,11 +1185,12 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
     x.globalAlpha = 0.45; x.drawImage(tint, 0, srcY, art.width, srcH, 0, Q_H - dstH, Q_W, dstH); x.globalAlpha = 1;
     x.textBaseline = "middle"; x.font = "400 " + L.px + "px " + BODYF; x.fillStyle = "#111";
     var y = Q_TOP + Math.max(0, (Q_H - Q_TOP - Q_BOTTOM - L.h) / 2); L.lines.forEach(function (l) { if (l === null) { y += Math.round(L.lh * 0.45); return; } x.fillText(l, Q_PAD, y + L.lh / 2); y += L.lh; });
-    var ay = Q_H - Q_BOTTOM + 30; x.font = "400 13px " + SANS; x.fillStyle = "#666";
-    [plain(c0.ko), plain(c0.who) + (c.title ? " · " + plain(c.title) : "")].forEach(function (l, i) { x.fillText(wrapText(x, l, Q_W - 2 * Q_PAD)[0] || l, Q_PAD, ay + i * 20); });
+    var ay = Q_H - Q_BOTTOM + 30, srcT = [plain(c0.ko), plain(c0.who) + (c.title ? " · " + plain(c.title) : "")], spx = 13, sl, slh;
+    for (; spx >= 9; spx--) { x.font = "400 " + spx + "px " + SANS; sl = []; srcT.forEach(function (s) { wrapText(x, s, Q_W - 2 * Q_PAD).forEach(function (l) { sl.push(l); }); }); if (sl.length <= 4) break; }
+    slh = Math.round(spx * 1.55); x.fillStyle = "#666";
+    sl.forEach(function (l, i) { x.fillText(l, Q_PAD, ay + i * slh); });
     x.textBaseline = "alphabetic"; x.textAlign = "right"; x.font = "500 13px " + MONO; x.fillStyle = "#FF5C9A"; x.fillText("오늘의 트레일", Q_W - 22, Q_H - 22); x.textAlign = "left";
     x.restore();
-    x.save(); x.strokeStyle = "#FF3D9A"; x.shadowColor = "#FF3D9A"; x.lineWidth = 3; x.shadowBlur = 22; rr(1.5); x.stroke(); x.shadowBlur = 8; rr(1.5); x.stroke(); x.restore();
     x.restore();
     return new Promise(function (res) { f.toBlob(function (b) { res({ file: new File([b], "오늘의트레일_선택문장.png", { type: "image/png" }), shrunk: L.shrunk }); }, "image/png"); });
   }
