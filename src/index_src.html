@@ -13,19 +13,21 @@
 <link rel="manifest" href="manifest.json">
 <title>오늘의 트레일</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600&family=Newsreader:ital,wght@1,500&family=Noto+Serif+KR:wght@600;700&display=swap">
 <style>
+@font-face { font-family: "Wanted Sans"; font-weight: 400; font-style: normal; font-display: swap; src: url("fonts/WantedSans-Regular.woff2") format("woff2"); }
+@font-face { font-family: "Wanted Sans"; font-weight: 500; font-style: normal; font-display: swap; src: url("fonts/WantedSans-Medium.woff2") format("woff2"); }
+@font-face { font-family: "Wanted Sans"; font-weight: 600; font-style: normal; font-display: swap; src: url("fonts/WantedSans-SemiBold.woff2") format("woff2"); }
+@font-face { font-family: "Wanted Sans"; font-weight: 700; font-style: normal; font-display: swap; src: url("fonts/WantedSans-Bold.woff2") format("woff2"); }
+@font-face { font-family: "Wanted Sans"; font-weight: 800; font-style: normal; font-display: swap; src: url("fonts/WantedSans-ExtraBold.woff2") format("woff2"); }
 /* Layout: 모바일 앱 한 화면. 하단 탭(오늘 / 지난 호 / 내 메모)으로 이동하고, 읽기 화면에서는 탭이 숨고 카드를 좌우로 넘김 */
 :root {
   --bg: #F0F0F0; --surface: #FFFFFF; --ink: #1A1A1A; --muted: #5F5F5F; --line: #D4D4D4;
   --quote-bg: #E6E6E6; --accent: #D61F69; --accent-ink: #FFFFFF; --ok: #3A3A3A; --ok-bg: #E4E4E4;
   --warn: #8A3B12; --warn-bg: #F6E3D6; --interp: #8A5A00; --interp-bg: #F6EBCF;
-  --font-display: "Noto Serif KR", "Nanum Myeongjo", "Apple SD Gothic Neo", serif;
-  --font-quote: "Newsreader", Georgia, "Times New Roman", serif;
-  --font-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
-  --font-data: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --font-display: "Wanted Sans", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --font-quote: "Wanted Sans", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --font-body: "Wanted Sans", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --font-data: "Wanted Sans", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -69,7 +71,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, .deck:focus-visib
 .hero > .art { position: absolute; left: 0; top: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
 .hero > *:not(.art) { z-index: 1; }
 .kick { font-family: var(--font-data); font-size: 12.5px; letter-spacing: .18em; opacity: .8; }
-.en-title { font-family: var(--font-quote); font-style: italic; font-weight: 500; font-size: 33px; line-height: 1.12; letter-spacing: -.01em; max-width: 12ch; margin-top: 18px; }
+.en-title { font-family: var(--font-quote); font-weight: 500; font-size: 33px; line-height: 1.12; letter-spacing: -.01em; max-width: 12ch; margin-top: 18px; }
 .ko-title { font-family: var(--font-display); font-weight: 700; font-size: 15px; line-height: 1.5; }
 .who { font-size: 14.5px; font-weight: 600; letter-spacing: .02em; }
 .pg { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
@@ -154,12 +156,12 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, .deck:focus-visib
 .bridge { margin: 0; font-size: 15px; color: var(--muted); border-left: 3px solid var(--accent); padding-left: 10px; max-width: 60ch; }
 .orig { background: var(--quote-bg); border-radius: 8px; padding: 16px 16px 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .orig .lab { font-family: var(--font-data); font-size: 12.5px; letter-spacing: .14em; color: var(--muted); margin: 0; }
-.orig .q { font-family: var(--font-quote); font-style: italic; font-weight: 500; font-size: clamp(20px, 5.2vw, 24px); line-height: 1.38; margin: 0; overflow-wrap: anywhere; text-wrap: balance; }
+.orig .q { font-family: var(--font-quote); font-weight: 500; font-size: clamp(20px, 5.2vw, 24px); line-height: 1.38; margin: 0; overflow-wrap: anywhere; text-wrap: balance; }
 .orig .by { font-size: 14px; color: var(--muted); margin: 0; }
 .orig .ko { margin: 0; padding-top: 10px; border-top: 1px solid var(--line); font-weight: 600; font-size: 16px; line-height: 1.6; text-wrap: balance; }
 .terms { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; font-size: 15px; }
 .terms li { display: flex; flex-wrap: wrap; gap: 2px 8px; }
-.terms b { font-family: var(--font-quote); font-style: italic; font-weight: 500; font-size: 15px; }
+.terms b { font-family: var(--font-quote); font-weight: 500; font-size: 15px; }
 .expl { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .expl p { margin: 0; max-width: 60ch; }
 .lab2 { font-weight: 600; letter-spacing: .12em; font-size: 13.5px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
@@ -178,7 +180,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, .deck:focus-visib
 .card.cover > * { position: relative; }
 .card.cover > .art { position: absolute; left: 0; top: 0; width: 100%; height: 340px; pointer-events: none; }
 .cv-kick { margin: 0; font-family: var(--font-data); font-size: 13px; letter-spacing: .18em; opacity: .75; }
-.cv-title { margin: 190px 0 0; font-family: var(--font-quote); font-style: italic; font-weight: 500; font-size: clamp(32px, 9vw, 42px); line-height: 1.12; letter-spacing: -.01em; text-wrap: balance; max-width: 15ch; }
+.cv-title { margin: 190px 0 0; font-family: var(--font-quote); font-weight: 500; font-size: clamp(32px, 9vw, 42px); line-height: 1.12; letter-spacing: -.01em; text-wrap: balance; max-width: 15ch; }
 .cv-ko { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 17px; line-height: 1.5; }
 .cv-who { margin: 0; font-size: 15px; }
 .cv-who b { font-weight: 600; letter-spacing: .02em; }
@@ -1281,7 +1283,7 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
 
   /* ---------- 전체 카드 이미지로 저장 (카드마다 글이 잘리지 않고 가득 차게, 1080px 폭) ---------- */
   var saveBtn = document.getElementById("saveall"), expSt = document.getElementById("exp-st"), exported = null;
-  var SANS = '"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif', SERIFKO = '"Noto Serif KR",serif', QUOTE = 'Newsreader,Georgia,serif', MONO = '"IBM Plex Mono",ui-monospace,monospace';
+  var SANS = '"Wanted Sans","Apple SD Gothic Neo","Malgun Gothic",sans-serif', SERIFKO = SANS, QUOTE = SANS, MONO = SANS;
   function plain(s) { var d = document.createElement("div"); d.innerHTML = String(s == null ? "" : s); return d.textContent.replace(/\s+/g, " ").trim(); }
   function wrapText(ctx, text, maxW) {
     var words = text.split(" "), lines = [], cur = "";
@@ -1314,7 +1316,7 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
       y = 24;
       line("TRAIL RUNNING · PODCAST", "400 13px " + MONO, "#B0B0B0", 18, P, TW);
       y = 205;
-      line(plain(c.en), "italic 500 40px " + QUOTE, "#F0F0F0", 45, P, TW * 0.9); y += 14;
+      line(plain(c.en), "500 40px " + QUOTE, "#F0F0F0", 45, P, TW * 0.9); y += 14;
       line(plain(c.ko), "700 17px " + SERIFKO, "#F0F0F0", 26, P, TW); y += 10;
       line(plain(c.who), "600 15px " + SANS, "#F0F0F0", 24, P, TW); y += 18;
       if (draw) { ctx.fillStyle = "rgba(255,255,255,.3)"; ctx.fillRect(P, y, TW, 1); } y += 14;
@@ -1341,7 +1343,7 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
     var TOT = 390, M = 22, W = TOT - 2 * M, scale = 1080 / TOT;
     var src = cards.filter(function (c) { return !c.memo; });
     var out = [], idx = 0;
-    var fontsReady = Promise.all(['600 15px "IBM Plex Sans KR"', '400 15px "IBM Plex Sans KR"', 'italic 500 22px Newsreader', '700 17px "Noto Serif KR"', '400 13px "IBM Plex Mono"'].map(function (f) { return document.fonts.load(f, "가Aa1"); })).catch(function () {});
+    var fontsReady = Promise.all(['400 15px "Wanted Sans"', '500 15px "Wanted Sans"', '600 15px "Wanted Sans"', '700 17px "Wanted Sans"'].map(function (f) { return document.fonts.load(f, "가Aa1"); })).catch(function () {});
     function next() {
       if (idx >= src.length) return Promise.resolve(out);
       var c = src[idx];
@@ -1483,7 +1485,7 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
     var text = qText, c = cards[qIdx] || {}, c0 = cards[0];
     if (!text || qLen > Q_MAX) return;
     toast("이미지 만드는 중…");
-    var ready = Promise.all(['500 14px "IBM Plex Sans KR"', '400 13px "IBM Plex Sans KR"', '400 13px "IBM Plex Mono"'].map(function (f) { return document.fonts.load(f, "가Aa1"); })).catch(function () {});
+    var ready = Promise.all(['500 14px "Wanted Sans"', '400 13px "Wanted Sans"'].map(function (f) { return document.fonts.load(f, "가Aa1"); })).catch(function () {});
     ready.then(function () { return makeQuote(text, c0, c, qSize); }).then(function (r) {
       var note = r.shrunk ? " (글이 길어 크기를 자동으로 줄였습니다)" : "";
       var share = navigator.canShare && navigator.canShare({ files: [r.file] }) && navigator.share;
