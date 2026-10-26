@@ -1185,9 +1185,10 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
     x.globalAlpha = 0.45; x.drawImage(tint, 0, srcY, art.width, srcH, 0, Q_H - dstH, Q_W, dstH); x.globalAlpha = 1;
     x.textBaseline = "middle"; x.font = "400 " + L.px + "px " + BODYF; x.fillStyle = "#111";
     var y = Q_TOP + Math.max(0, (Q_H - Q_TOP - Q_BOTTOM - L.h) / 2); L.lines.forEach(function (l) { if (l === null) { y += Math.round(L.lh * 0.45); return; } x.fillText(l, Q_PAD, y + L.lh / 2); y += L.lh; });
-    var ay = Q_H - Q_BOTTOM + 30, srcT = [plain(c0.ko), plain(c0.who) + (c.title ? " · " + plain(c.title) : "")], spx = 13, sl, slh;
-    for (; spx >= 9; spx--) { x.font = "400 " + spx + "px " + SANS; sl = []; srcT.forEach(function (s) { wrapText(x, s, Q_W - 2 * Q_PAD).forEach(function (l) { sl.push(l); }); }); if (sl.length <= 4) break; }
-    slh = Math.round(spx * 1.55); x.fillStyle = "#666";
+    var ay = Q_H - Q_BOTTOM + 30, srcT = [plain(c0.ko), plain(c0.who).replace(/\s*·\s*/g, " • ")], spx = 13, sl, slh;
+    if (c.title) srcT.push(plain(c.title));
+    for (; spx >= 9; spx--) { x.font = "400 " + spx + "px " + SANS; sl = []; srcT.forEach(function (s) { wrapText(x, s, Q_W - 2 * Q_PAD).forEach(function (l) { sl.push(l); }); }); if (sl.length <= srcT.length) break; }
+    slh = Math.round(spx * 1.55 * 0.8); x.fillStyle = "#666";
     sl.forEach(function (l, i) { x.fillText(l, Q_PAD, ay + i * slh); });
     x.textBaseline = "alphabetic"; x.textAlign = "right"; x.font = "500 13px " + MONO; x.fillStyle = "#FF5C9A"; x.fillText("오늘의 트레일", Q_W - 22, Q_H - 22); x.textAlign = "left";
     x.restore();
