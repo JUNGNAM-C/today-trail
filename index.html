@@ -1189,26 +1189,30 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
         line(pts, lwb, rr(0.35, 0.95));
       }
     } else if (a.motif === "loft") {
-      /* 출렁이는 천 여러 겹: 다발이 서로 교차하고, 한곳에 모였다가 부채처럼 흩어진다. 선 하나하나는 가늘게 유지해 뭉치지 않는다 */
-      var nb = 3, bi;
+      /* 출렁이는 천 두 겹: 서로 한두 번 교차하고 가볍게 모였다 흩어진다. 전체 높이는 ry*2.2 이내로 눌러 담는다 */
+      var nb = 2, bi, L = [];
       for (bi = 0; bi < nb; bi++) {
-        var f1 = rr(0.5, 1.1), f2 = rr(1.3, 2.4), ph1 = rr(0, TAU), ph2 = rr(0, TAU), q1 = rr(1.2, 2.6) * (R() < 0.5 ? -1 : 1), q2 = rr(0.8, 2) * (R() < 0.5 ? -1 : 1);
-        var a1 = rr(0.45, 0.75), a2 = rr(0.18, 0.34), off = ry * 0.3 + rr(-0.4, 0.4) * ry, gpa = rr(0, TAU), gf = rr(0.5, 1.1);
-        var m = 15 + (R() * 6 | 0), nz = [], nf = [], np = [];
-        for (i = 0; i <= m; i++) { nz.push(rr(-1, 1)); nf.push(rr(0.8, 2.2)); np.push(rr(0, TAU)); }
+        var f1 = rr(0.5, 0.9), f2 = rr(1.3, 2.0), ph1 = rr(0, TAU), ph2 = rr(0, TAU), q1 = rr(1.0, 2.0) * (R() < 0.5 ? -1 : 1), q2 = rr(0.8, 1.5) * (R() < 0.5 ? -1 : 1);
+        var a1 = rr(0.4, 0.6), a2 = rr(0.12, 0.22), off = (bi - 0.5) * ry * 0.5, gpa = rr(0, TAU), gf = rr(0.5, 0.9);
+        var m = 11 + (R() * 4 | 0), nz = [], nf = [], np = [];
+        for (i = 0; i <= m; i++) { nz.push(rr(-1, 1)); nf.push(rr(0.8, 1.8)); np.push(rr(0, TAU)); }
         for (i = 0; i <= m; i++) {
-          var tt = i / m, pts2 = [], thick = (i % 5 === 0);
+          var tt = i / m, pts2 = [];
           for (var s = -1; s <= 1.0001; s += 0.008) {
             var u = (s + 1) / 2;
-            var fan = 0.5 + 0.5 * Math.sin(TAU * gf * u + gpa);                 /* 0=모임, 1=흩어짐 */
-            var G = ry * (0.12 + 1.5 * fan * fan);
+            var fan = 0.5 + 0.5 * Math.sin(TAU * gf * u + gpa);
+            var G = ry * (0.15 + 0.9 * fan * fan);
             var yv = off + (tt - 0.5) * G + ry * (a1 * Math.sin(TAU * f1 * u + ph1 + q1 * tt) + a2 * Math.sin(TAU * f2 * u + ph2 + q2 * tt))
-                   + ry * 0.5 * fan * nz[i] * Math.sin(TAU * nf[i] * u + np[i]);
-            pts2.push([cx + s * hw, cy + yv]);
+                   + ry * 0.22 * fan * nz[i] * Math.sin(TAU * nf[i] * u + np[i]);
+            pts2.push([cx + s * hw, yv]);
           }
-          line(pts2, thick ? 1.3 : 0.6, thick ? rr(0.8, 0.95) : rr(0.35, 0.65));
+          L.push({ p: pts2, th: (i % 4 === 0), al: rr(0.45, 0.8) });
         }
       }
+      var ymn = 1e9, ymx = -1e9;
+      L.forEach(function (o) { o.p.forEach(function (q) { if (q[1] < ymn) ymn = q[1]; if (q[1] > ymx) ymx = q[1]; }); });
+      var kH = Math.min(1, ry * 2.2 / Math.max(1, ymx - ymn)), yc = (ymn + ymx) / 2;
+      L.forEach(function (o) { o.p.forEach(function (q) { q[1] = cy + ry * 0.35 + (q[1] - yc) * kH; }); line(o.p, o.th ? 1.3 : 0.65, o.th ? 0.95 : o.al); });
     } else if (a.motif === "dots6") {
       var NU = 70, NV = 34, ax = rr(0.15, 0.35), f1 = rr(1, 2.2), f2 = rr(1.2, 2.6), p1v = rr(0, TAU), p2v = rr(0, TAU), by = rr(0.3, 0.8), sh = rr(-0.6, 0.6);
       var Xp = function (u, v) { return cx + hw * ((u - 0.5) * 2 * (1 + sh * (v - 0.5)) + ax * Math.sin(TAU * (f1 * v) + p1v) * Math.sin(Math.PI * u)); };
