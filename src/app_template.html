@@ -599,7 +599,7 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
     var ctx = cv.getContext("2d"); ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, w, h); ctx.lineCap = "round"; ctx.lineJoin = "round";
     var R = rng(a.seed), rr = function (lo, hi) { return lo + (hi - lo) * R(); };
-    var ry = Math.min(h * 0.2, 115), cy = 44 + ry * 1.1, cx = w / 2, hw = w * (a.motif === 'dots6' ? 0.44 : (a.motif === 'terrain' ? 0.38 : 0.46)), TAU = Math.PI * 2, i, j;
+    var ry = Math.min(h * 0.2, 115), cy = 44 + ry * 1.1, cx = w / 2, hw = w * 0.64, TAU = Math.PI * 2, i, j;
     function line(pts, lw, al) { ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]); for (var q = 1; q < pts.length; q++) ctx.lineTo(pts[q][0], pts[q][1]); ctx.lineWidth = lw; ctx.strokeStyle = "rgba(255,255,255," + al + ")"; ctx.stroke(); }
     if (a.motif === "terrain") {
       /* 지형 등고선: 뒤에서 앞으로 쌓인 가로선이 봉우리를 따라 솟는다 */
@@ -614,7 +614,7 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
       var y0 = cy - ry * 0.12, y1 = cy + ry * 0.72, Hm = ry * 0.95;
       for (i = 0; i < nz; i++) {
         var z = Math.min(1, Math.max(0, i / (nz - 1) + rr(-0.25, 0.25) / nz)), by0 = y0 + (y1 - y0) * z, pts5 = [];
-        for (var xx = -1; xx <= 1.0001; xx += 0.004) { pts5.push([cx + xx * hw * (0.75 + 0.45 * z), by0 - Hm * (0.55 + 0.45 * (1 - z)) * hf(xx, z)]); }
+        for (var xx = -1; xx <= 1.0001; xx += 0.004) { pts5.push([cx + xx * hw * (1 + 0.3 * z), by0 - Hm * (0.55 + 0.45 * (1 - z)) * hf(xx, z)]); }
         ctx.beginPath(); ctx.moveTo(pts5[0][0], pts5[0][1]);               /* 선 아래를 카드 배경색으로 채워 뒤쪽 선을 가린다 */
         for (var fq = 1; fq < pts5.length; fq++) ctx.lineTo(pts5[fq][0], pts5[fq][1]);
         ctx.lineTo(pts5[pts5.length - 1][0], y1 + ry * 0.7); ctx.lineTo(pts5[0][0], y1 + ry * 0.7); ctx.closePath();
@@ -662,7 +662,7 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
           var xx = R1 * Math.cos(aa * th / 2 + pp) * (0.6 + 0.4 * Math.cos(th)) + R2 * Math.cos(bb * th), yy = R1 * Math.sin(aa * th / 2) * 0.6 + R2 * Math.sin(bb * th) * 0.5;
           xx *= sx; pts3.push([cx + xx * Math.cos(rot) - yy * Math.sin(rot), cy + xx * Math.sin(rot) + yy * Math.cos(rot)]);
         }
-        var mx = 0; pts3.forEach(function (q) { mx = Math.max(mx, Math.abs(q[0] - cx)); }); if (mx > w * 0.46) { var kk = w * 0.46 / mx; pts3.forEach(function (q) { q[0] = cx + (q[0] - cx) * kk; }); }
+        var mx = 0; pts3.forEach(function (q) { mx = Math.max(mx, Math.abs(q[0] - cx)); }); if (mx < w * 0.62) { var kk = w * 0.62 / mx; pts3.forEach(function (q) { q[0] = cx + (q[0] - cx) * kk; }); }
         line(pts3, R() < 0.2 ? rr(2, 3.2) : rr(0.4, 1.4), rr(0.4, 1));
       }
     } else {                                                      /* flow: 다발이 모였다 갈라지고, 가는 선이 가로지르며, 급하게 꺾인다 */
