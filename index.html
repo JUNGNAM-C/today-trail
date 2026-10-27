@@ -2379,7 +2379,7 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
     var m = 0.03, F = 0.17, d = t < sp.x0 - m ? sp.x0 - m - t : (t > sp.x1 + m ? t - sp.x1 - m : 0);
     return 1 - igSmooth(0, F, d);
   }
-  function igPatA(t, sp) { return 0.025 + 0.975 * (1 - igSmooth(0.6, 1.0, igPhotoA(t, sp))); }
+  function igPatA(t, sp) { return 0.025 + 0.975 * (1 - igSmooth(0.8, 1.0, igPhotoA(t, sp))); }
   function igMask(cv, vertical, stops) {
     var x = cv.getContext("2d"); x.save(); x.globalCompositeOperation = "destination-in";
     var g = vertical ? x.createLinearGradient(0, 0, 0, cv.height) : x.createLinearGradient(0, 0, cv.width, 0);
@@ -2451,8 +2451,11 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
     var sN = 0, sF = 0; for (cc = 0; cc < 54; cc++) { var tn = (((cc + .5) / 54) * 810 - 135) / 540, tf = (((53 - cc + .5) / 54) * 810 - 135) / 540; sN += dens[cc] * igPatA(Math.max(0, Math.min(1, ((cc + .5) / 54 * 810 - 135) / 540)), spn2); sF += dens[cc] * igPatA(Math.max(0, Math.min(1, (((53 - cc) + .5) / 54 * 810 - 135) / 540)), spn2); }
     var ax = ac.getContext("2d");
     if (sF >= sN) { ax.translate(aw, 0); ax.scale(-1, 1); } ax.drawImage(tmp, 0, 0, aw, ah); ax.setTransform(1, 0, 0, 1, 0, 0);
+    var ac2 = document.createElement("canvas"); ac2.width = aw; ac2.height = ah; ac2.getContext("2d").drawImage(ac, 135 * S - 135 * S * 1.35, 0, aw * 1.35, ah); ac = ac2;
     igMask(ac, true, [[0, 1], [.7, 1], [.92, 0], [1, 0]]);
-    var ps = []; for (var q2 = 0; q2 <= 32; q2++) { var X = q2 / 32, tt = Math.max(0, Math.min(1, (X * 810 - 135) / 540)); ps.push([X, igPatA(tt, spn2)]); }
+    var pk = 0, pkc; for (pkc = 1; pkc < 54; pkc++) if (dens[pkc] > dens[pk]) pk = pkc;
+    var flipped = sF >= sN, ptn = ((((flipped ? 53 - pk : pk) + .5) / 54) * 810 - 135) / 540 * 1.35, scn = (spn2.x0 + spn2.x1) / 2;
+    var ps = []; for (var q2 = 0; q2 <= 32; q2++) { var X = q2 / 32, tt = Math.max(0, Math.min(1, (X * 810 - 135) / 540)); var pa = igPatA(tt, spn2); if ((tt < scn) !== (ptn < scn)) pa = Math.min(pa, 0.025); ps.push([X, pa]); }
     igMask(ac, false, ps);
     x.drawImage(ac, -135 * S, -36 * S);
     /* 3) 글 */
