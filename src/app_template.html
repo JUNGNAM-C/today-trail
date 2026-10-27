@@ -87,8 +87,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, .deck:focus-visib
 .ibox.today { height: 558px; }
 .hero.ibox.today > .art { height: 300px; }
 .hero.ibox.sm > .art { height: 175px; }
-.ibox.sm.keepart { height: 497px; }
-.hero.ibox.sm.keepart > .art { height: 300px; }
+.hero.ibox.sm.keepart > .art { height: 215px; }
 #issues, #notes-list { display: flex; flex-direction: column; gap: 10px; }
 #notes-list .sec { margin-top: 8px; }
 .ibox .en-title { margin-top: auto; font-size: 30px; }
@@ -174,7 +173,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, .deck:focus-visib
 .card.cover > * { position: relative; }
 .card.cover > .art { position: absolute; left: 0; top: 0; width: 100%; height: 340px; pointer-events: none; }
 .cv-kick { margin: 0; font-family: var(--font-data); font-size: 13px; letter-spacing: .18em; opacity: .75; }
-.cv-title { margin: 190px 0 0; font-family: var(--font-quote); font-weight: 500; font-size: clamp(32px, 9vw, 42px); line-height: 1.12; letter-spacing: -.01em; text-wrap: balance; max-width: 15ch; }
+.cv-title { margin: 190px 0 0; font-family: var(--font-quote); font-weight: 500; font-size: 30px; line-height: 1.12; letter-spacing: -.01em; text-wrap: balance; }
 .cv-ko { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 17px; line-height: 1.5; }
 .cv-who { margin: 0; font-size: 15px; }
 .cv-who b { font-weight: 600; letter-spacing: .02em; }
@@ -553,7 +552,7 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
     if (name === "home") renderHome();
     if (name === "archive") renderArchive();
     if (name === "notes") renderNotes();
-    if (name === "read") requestAnimationFrame(function () { drawCoverArt(); go(prog.last || 0, true); });
+    if (name === "read") requestAnimationFrame(function () { drawCoverArt(); fitCoverTitle(); go(prog.last || 0, true); });
   }
   tabs.forEach(function (t) { t.addEventListener("click", function () { show(t.getAttribute("data-go")); }); });
   document.getElementById("back").addEventListener("click", function () { show("home"); });
@@ -883,7 +882,18 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
   function drawBoxArt() {
     Array.prototype.forEach.call(document.querySelectorAll("canvas.art[data-art]"), function (cv) {
       var b = cv.parentNode;
-      if (b.clientWidth) drawArt(cv, ART[cv.getAttribute("data-art")], b.clientWidth, (b.classList.contains("today") || b.classList.contains("keepart")) ? 300 : (b.classList.contains("sm") ? 175 : b.clientHeight));
+      if (b.clientWidth) drawArt(cv, ART[cv.getAttribute("data-art")], b.clientWidth, b.classList.contains("today") ? 300 : b.classList.contains("keepart") ? 215 : (b.classList.contains("sm") ? 175 : b.clientHeight));
+    });
+  }
+  /* 표지 영문 제목: 30px에서 시작해 3줄 안에 들어올 때까지 줄이고, 가장 작게는 20px */
+  function fitCoverTitle() {
+    Array.prototype.forEach.call(document.querySelectorAll(".cv-title"), function (el) {
+      var px = 30;
+      for (; px > 20; px--) {
+        el.style.fontSize = px + "px";
+        if (Math.round(el.scrollHeight / (px * 1.12)) <= 3) break;
+      }
+      el.style.fontSize = px + "px";
     });
   }
   function drawCoverArt() {
