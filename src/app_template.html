@@ -1268,16 +1268,19 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
     var m = document.createElement("canvas").getContext("2d"), W = IGW - 72, tpx = 37.2, tlh = tpx * 1.25, bpx = 19.5, lh = 26.4;
     var TFm = '"Ownglyph","Chosun Nm","Wanted Sans","Apple SD Gothic Neo","Malgun Gothic",sans-serif', BFm = '"Ridi Batang","Chosun Nm","Wanted Sans","Apple SD Gothic Neo","Malgun Gothic",serif';
     var paras = it.c.expl.map(plain);
+    /* 문단 단위로 나눈다: 문단은 쪼개지 않고 통째로 다음 장으로 넘기고, 한 문단만으로 한 장이 넘칠 때만 줄 단위로 자른다 */
     function split(cap) {
       var pages = [], cur = [], h = 0; m.font = "400 " + bpx + "px " + BFm;
       paras.forEach(function (t) {
-        var ls = wrapText(m, t, W), fresh = true;
+        var ls = wrapText(m, t, W), ph = ls.length * lh, gap = cur.length ? 12 : 0;
+        if (cur.length && h + gap + ph > cap) { pages.push(cur); cur = []; h = 0; gap = 0; }
+        if (ph <= cap) { cur.push(ls); h += gap + ph; return; }
+        var part = [];
         ls.forEach(function (ln) {
-          var need = lh + (fresh && cur.length ? 12 : 0);
-          if (cur.length && h + need > cap) { pages.push(cur); cur = []; h = 0; fresh = true; need = lh; }
-          if (fresh) cur.push([]);
-          h += need; cur[cur.length - 1].push(ln); fresh = false;
+          if (part.length && h + gap + (part.length + 1) * lh > cap) { cur.push(part); pages.push(cur); cur = []; h = 0; gap = 0; part = []; }
+          part.push(ln);
         });
+        if (part.length) { cur.push(part); h += gap + part.length * lh; }
       });
       if (cur.length) pages.push(cur);
       return pages;
@@ -1287,9 +1290,6 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
     if (pages.length > 1) {
       var cap = capFor(plain(it.c.title) + " 1/" + pages.length), pn = split(cap).length;
       pages = split(cap);
-      /* 마지막 장에 한두 줄만 남지 않도록 한 장에 담는 양을 고르게 줄인다 */
-      var lastN = function (pg) { var n2 = 0; pg[pg.length - 1].forEach(function (L) { n2 += L.length; }); return n2; };
-      for (var c2 = cap - lh; c2 > lh * 3 && lastN(pages) < 4; c2 -= lh / 2) { var t2 = split(c2); if (t2.length > pages.length) break; pages = t2; }
     }
     return pages;
   }
