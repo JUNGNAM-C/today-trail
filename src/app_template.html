@@ -2,6 +2,8 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
 @font-face { font-family: "Bithumb Gothic"; font-weight: 100 900; font-style: normal; font-display: swap; src: url("fonts/BithumbGothic.woff2") format("woff2"); }
+@font-face { font-family: "Ridi Batang"; font-weight: 400; font-style: normal; font-display: swap; src: url("fonts/RIDIBatang.woff2") format("woff2"); }
+@font-face { font-family: "Ownglyph"; font-weight: 400; font-style: normal; font-display: swap; src: url("fonts/Ownglyph.woff2") format("woff2"); }
 @font-face { font-family: "Chosun Nm"; font-weight: 400; font-style: normal; font-display: swap; src: url("fonts/ChosunNm.woff2") format("woff2"); }
 @font-face { font-family: "Wanted Sans"; font-weight: 400; font-style: normal; font-display: swap; src: url("fonts/WantedSans-Regular.woff2") format("woff2"); }
 @font-face { font-family: "Wanted Sans"; font-weight: 500; font-style: normal; font-display: swap; src: url("fonts/WantedSans-Medium.woff2") format("woff2"); }
@@ -230,6 +232,26 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
 .saveall { appearance: none; border: 0; background: var(--accent); color: var(--accent-ink); border-radius: 999px; min-height: 52px; padding: 0 18px; font-weight: 600; font-size: 16px; cursor: pointer; }
 .saveall:disabled { opacity: .6; }
 .saved { font-size: 14px; color: var(--muted); min-height: 1.4em; }
+
+.igsheet { position: fixed; inset: 0; z-index: 60; background: #000; color: #F0F0F0; overflow-y: auto; -webkit-overflow-scrolling: touch; display: none; padding: calc(env(safe-area-inset-top, 0px) + 14px) 18px 40px; }
+.igsheet.on { display: block; }
+.igsheet h2 { margin: 0; font-family: var(--font-display); font-size: 20px; }
+.ighd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.igx { appearance: none; border: 1px solid #444; background: transparent; color: #F0F0F0; border-radius: 999px; min-height: 40px; padding: 0 16px; font-size: 15px; cursor: pointer; }
+.ighint { margin: 0 0 14px; font-size: 14px; line-height: 1.6; color: #A8A8A8; }
+.igbtn { appearance: none; border: 1px solid #555; background: #1A1A1A; color: #F0F0F0; border-radius: 12px; min-height: 44px; padding: 0 14px; font-size: 15px; cursor: pointer; }
+.igrow { display: flex; align-items: center; gap: 8px; margin: 14px 0 8px; flex-wrap: wrap; }
+.igcnt { margin-left: auto; font-size: 13.5px; color: #A8A8A8; }
+.igpos[aria-pressed="true"] { background: #FF5C9A; color: #1A0A12; border-color: #FF5C9A; font-weight: 700; }
+.igth { display: none; width: 72px; height: 54px; object-fit: cover; border-radius: 8px; border: 1px solid #444; }
+.igth.on { display: inline-block; }
+.iglist { display: flex; flex-direction: column; gap: 6px; max-height: 38vh; overflow-y: auto; border: 1px solid #2A2A2A; border-radius: 12px; padding: 6px; }
+.igitem { display: flex; align-items: center; gap: 10px; padding: 9px 8px; border-radius: 8px; font-size: 15px; cursor: pointer; }
+.igitem input { width: 20px; height: 20px; accent-color: #FF5C9A; flex: none; }
+.igitem .n { font-family: var(--font-data); color: #FF5C9A; font-size: 13px; flex: none; }
+.igact { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+.igout { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 16px; }
+.igout img { width: 100%; border-radius: 8px; border: 1px solid #2A2A2A; display: block; }
 @media (prefers-reduced-motion: reduce) { .seg i { transition: none; } }
 </style>
 
@@ -444,7 +466,7 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
         '<button type="button" class="chip" data-stance="doubt" aria-pressed="false">의문이 드는 점</button></div>' +
         '<textarea id="memo" placeholder="떠오른 생각을 적어 두세요."></textarea>' +
         '<span class="saved" id="saved" aria-live="polite"></span>' +
-        '<div class="exp"><button type="button" class="saveall" id="saveall">전체 카드 이미지로 저장</button><span class="saved" id="exp-st" aria-live="polite"></span></div>';
+        '<div class="exp"><button type="button" class="saveall" id="saveall">전체 카드 이미지로 저장</button><button type="button" class="saveall" id="igopen" style="background:transparent;color:var(--accent);border:1.5px solid var(--accent)">인스타 업로드용 이미지 만들기</button><span class="saved" id="exp-st" aria-live="polite"></span></div>';
       el.innerHTML = h;
       deck.appendChild(el);
       return;
@@ -617,7 +639,7 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
   var LINE_MOTIFS = { terrain: 1, burst: 1, loft: 1, dots6: 1, scrawl: 1, flow: 1, contour: 1 };
   function rng(s) { s = s | 0; return function () { s = (s + 0x6D2B79F5) | 0; var t = Math.imul(s ^ (s >>> 15), 1 | s); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
   function drawLines(cv, a, w, h) {
-    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var dpr = a.dpr || Math.min(window.devicePixelRatio || 1, 2);
     cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
     var ctx = cv.getContext("2d"); ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, w, h); ctx.lineCap = "round"; ctx.lineJoin = "round";
@@ -722,7 +744,7 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
           if ((v00 < th2) !== (v01 < th2)) pt.push(ip(X0, Y0, v00, X0, Y0 + ch2, v01));
           if (pt.length >= 2) { ctx.moveTo(pt[0][0], pt[0][1]); ctx.lineTo(pt[1][0], pt[1][1]); if (pt.length === 4) { ctx.moveTo(pt[2][0], pt[2][1]); ctx.lineTo(pt[3][0], pt[3][1]); } }
         }
-        ctx.lineWidth = thick ? 1.4 : 0.7; ctx.strokeStyle = "rgba(255,255,255," + (thick ? 0.95 : 0.7) + ")"; ctx.stroke();
+        ctx.lineWidth = (thick ? 1.4 : 0.7) * (a.lw || 1); ctx.strokeStyle = "rgba(255,255,255," + (thick ? 0.95 : 0.7) + ")"; ctx.stroke();
       }
     } else {                                                      /* flow: 다발이 모였다 갈라지고, 가는 선이 가로지르며, 급하게 꺾인다 */
       var sig = function (x) { return 1 / (1 + Math.exp(-x)); };
@@ -1152,6 +1174,174 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
       saveBtn.textContent = "이미지 " + files.length + "장 저장하기";
       expSt.textContent = "준비되었습니다. 버튼을 한 번 더 누르면 저장됩니다.";
     }).catch(function (e) { saveBtn.disabled = false; expSt.textContent = "이미지를 만들지 못했습니다: " + e; });
+  });
+
+
+  /* ---------- 인스타 업로드용 이미지 (1080×1350, 4:5) ----------
+     사진을 올리면 오른쪽은 사진이 선명하고 왼쪽은 서서히 사라지며, 패턴(등고선)은 반대로 왼쪽이 진하고 오른쪽이 옅게 합성한다.
+     제목 한 줄과 설명글만 넣고, 고른 카드만 만든다. 사진은 기기 안에서만 처리한다. */
+  var IGW = 540, IGH = 675, IGS = 2, igImg = null, igFiles = [];
+  var igEl = document.createElement("div"); igEl.className = "igsheet"; igEl.setAttribute("role", "dialog"); igEl.setAttribute("aria-label", "인스타 업로드용 이미지");
+  igEl.innerHTML = '<div class="ighd"><h2>인스타 업로드용 이미지</h2><button type="button" class="igx" id="igx">닫기</button></div>' +
+    '<p class="ighint">사진을 올리면 인물이 있는 쪽은 사진을 선명하게 살리고, 반대쪽은 패턴으로 자연스럽게 이어 붙입니다. 인물 위치는 자동으로 찾고, 틀리면 직접 고를 수 있습니다. 사진을 고르지 않으면 패턴만으로 만듭니다. 사진은 이 기기 안에서만 처리되고 어디에도 올라가지 않습니다. 사진은 사용 허락을 확인한 것만 쓰세요.</p>' +
+    '<div class="igrow"><label class="igbtn" for="igf" style="display:inline-flex;align-items:center">사진 선택</label><input type="file" id="igf" accept="image/*" style="position:absolute;left:-9999px"><img class="igth" id="igth" alt="선택한 사진"><button type="button" class="igbtn" id="igclr" style="display:none">사진 빼기</button></div>' +
+    '<div class="igrow" id="igposrow" style="display:none"><span style="font-size:14px;color:#A8A8A8">인물 위치</span><button type="button" class="igbtn igpos" data-p="auto" aria-pressed="true">자동</button><button type="button" class="igbtn igpos" data-p="left" aria-pressed="false">왼쪽</button><button type="button" class="igbtn igpos" data-p="center" aria-pressed="false">가운데</button><button type="button" class="igbtn igpos" data-p="right" aria-pressed="false">오른쪽</button></div>' +
+    '<div class="igrow"><button type="button" class="igbtn" id="igall">전체 선택</button><button type="button" class="igbtn" id="ignone">선택 해제</button><span class="igcnt" id="igcnt" aria-live="polite"></span></div>' +
+    '<div class="iglist" id="iglist"></div>' +
+    '<div class="igact"><button type="button" class="saveall" id="iggo">이미지 만들기</button><button type="button" class="saveall" id="igsave" style="display:none">저장하기</button><span class="saved" id="igst" aria-live="polite"></span></div>' +
+    '<div class="igout" id="igout"></div>';
+  document.body.appendChild(igEl);
+  var igList = igEl.querySelector("#iglist"), igCnt = igEl.querySelector("#igcnt"), igGo = igEl.querySelector("#iggo"), igSave = igEl.querySelector("#igsave"), igSt = igEl.querySelector("#igst"), igOut = igEl.querySelector("#igout"), igTh = igEl.querySelector("#igth"), igClr = igEl.querySelector("#igclr");
+  var igItems = [], igPos = "auto", igSubj = null;
+  cards.forEach(function (c, i) { if (!c.cover && !c.memo) igItems.push({ c: c, i: i }); });
+  igList.innerHTML = igItems.map(function (it, k) {
+    return '<label class="igitem"><input type="checkbox" data-k="' + k + '" checked><span class="n">' + String(k + 1).padStart(2, "0") + '</span><span>' + plain(it.c.title) + '</span></label>';
+  }).join("");
+  function igSel() { return Array.prototype.map.call(igList.querySelectorAll("input:checked"), function (e) { return +e.getAttribute("data-k"); }); }
+  function igCount() { var n = igSel().length; igCnt.textContent = n + " / " + igItems.length + "장 선택"; igGo.disabled = !n; igGo.textContent = n ? "선택한 " + n + "장 만들기" : "카드를 선택하세요"; }
+  igList.addEventListener("change", function () { igCount(); igResetOut(); });
+  igEl.querySelector("#igall").addEventListener("click", function () { Array.prototype.forEach.call(igList.querySelectorAll("input"), function (e) { e.checked = true; }); igCount(); igResetOut(); });
+  igEl.querySelector("#ignone").addEventListener("click", function () { Array.prototype.forEach.call(igList.querySelectorAll("input"), function (e) { e.checked = false; }); igCount(); igResetOut(); });
+  function igResetOut() { igFiles = []; igOut.innerHTML = ""; igSave.style.display = "none"; igSt.textContent = ""; }
+  igEl.querySelector("#igf").addEventListener("change", function (ev) {
+    var f = ev.target.files && ev.target.files[0]; if (!f) return;
+    var url = URL.createObjectURL(f), im = new Image();
+    im.onload = function () { igImg = im; igSubj = igFindSubject(im); igEl.querySelector("#igposrow").style.display = ""; igTh.src = url; igTh.classList.add("on"); igClr.style.display = ""; igResetOut(); };
+    im.onerror = function () { igSt.textContent = "이 사진은 열 수 없습니다. 다른 사진을 골라 주세요."; };
+    im.src = url;
+  });
+  igClr.addEventListener("click", function () { igImg = null; igTh.classList.remove("on"); igClr.style.display = "none"; igEl.querySelector("#igposrow").style.display = "none"; igEl.querySelector("#igf").value = ""; igResetOut(); });
+  document.getElementById("igopen").addEventListener("click", function () { igEl.classList.add("on"); igEl.scrollTop = 0; igCount(); });
+  igEl.querySelector("#igx").addEventListener("click", function () { igEl.classList.remove("on"); });
+
+  Array.prototype.forEach.call(igEl.querySelectorAll(".igpos"), function (b) {
+    b.addEventListener("click", function () {
+      igPos = b.getAttribute("data-p");
+      Array.prototype.forEach.call(igEl.querySelectorAll(".igpos"), function (o) { o.setAttribute("aria-pressed", o === b ? "true" : "false"); });
+      igResetOut();
+    });
+  });
+  /* 사진에서 인물(눈에 띄는 부분)의 가로 범위를 찾는다: 사진 전체 평균 색과 많이 다른 부분을 중요하게 보고, 가로 위치별로 모아 중심과 폭을 구한다 */
+  function igFindSubject(im) {
+    var w = 72, h = Math.max(8, Math.round(72 * im.naturalHeight / im.naturalWidth)), c = document.createElement("canvas"); c.width = w; c.height = h;
+    var g = c.getContext("2d"); g.drawImage(im, 0, 0, w, h); var d = g.getImageData(0, 0, w, h).data, i, mr = 0, mg = 0, mb = 0, n = w * h;
+    for (i = 0; i < n; i++) { mr += d[i * 4]; mg += d[i * 4 + 1]; mb += d[i * 4 + 2]; } mr /= n; mg /= n; mb /= n;
+    var sc = [], x, y;
+    for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
+      i = (y * w + x) * 4; var r = d[i], gg = d[i + 1], b = d[i + 2], mx = Math.max(r, gg, b), mn = Math.min(r, gg, b);
+      sc.push({ x: x, v: Math.sqrt(Math.pow(r - mr, 2) + Math.pow(gg - mg, 2) + Math.pow(b - mb, 2)) + (mx - mn) * 1.2 });
+    }
+    var sorted = sc.map(function (o) { return o.v; }).sort(function (a, b2) { return a - b2; }), th = sorted[Math.floor(sorted.length * 0.86)];
+    var cnt = new Array(w).fill(0); sc.forEach(function (o) { if (o.v >= th) cnt[o.x] += o.v; });
+    var win = Math.round(w * 0.3), best = -1, bx = 0, k2, t2;
+    for (k2 = 0; k2 <= w - win; k2++) { t2 = 0; for (var q = 0; q < win; q++) t2 += cnt[k2 + q]; if (t2 > best) { best = t2; bx = k2; } }
+    var cxm = (bx + win / 2) / w;
+    return { x0: Math.max(0, cxm - 0.22), x1: Math.min(1, cxm + 0.22) };
+  }
+  window.__igFind = igFindSubject;
+  function igSpan() {
+    if (igPos === "left") return { x0: 0.02, x1: 0.48 };
+    if (igPos === "center") return { x0: 0.28, x1: 0.72 };
+    if (igPos === "right") return { x0: 0.52, x1: 0.98 };
+    var sj = igSubj || { x0: 0.55, x1: 0.95 }, wd = Math.max(sj.x1 - sj.x0, 0.3), cx = (sj.x0 + sj.x1) / 2;
+    return { x0: Math.max(0, cx - wd / 2), x1: Math.min(1, cx + wd / 2) };
+  }
+  function igSmooth(a, b, t) { t = Math.max(0, Math.min(1, (t - a) / (b - a))); return t * t * (3 - 2 * t); }
+  function igPhotoA(t, sp) {
+    var m = 0.03, F = 0.3, d = t < sp.x0 - m ? sp.x0 - m - t : (t > sp.x1 + m ? t - sp.x1 - m : 0);
+    return 1 - igSmooth(0, F, d);
+  }
+  function igPatA(t, sp) { return 0.025 + 0.975 * (1 - igSmooth(0.15, 0.85, igPhotoA(t, sp))); }
+  function igMask(cv, vertical, stops) {
+    var x = cv.getContext("2d"); x.save(); x.globalCompositeOperation = "destination-in";
+    var g = vertical ? x.createLinearGradient(0, 0, 0, cv.height) : x.createLinearGradient(0, 0, cv.width, 0);
+    stops.forEach(function (s) { g.addColorStop(s[0], "rgba(0,0,0," + s[1] + ")"); });
+    x.fillStyle = g; x.fillRect(0, 0, cv.width, cv.height); x.restore();
+  }
+  function igSpaced(x, txt, px, py, sp, right) {
+    var w = 0, i; for (i = 0; i < txt.length; i++) w += x.measureText(txt[i]).width + sp; w -= sp;
+    var cx = right ? px - w : px;
+    for (i = 0; i < txt.length; i++) { x.fillText(txt[i], cx, py); cx += x.measureText(txt[i]).width + sp; }
+  }
+  function igRender(it, k) {
+    var S = IGS, cv = document.createElement("canvas"); cv.width = IGW * S; cv.height = IGH * S;
+    var x = cv.getContext("2d"); x.fillStyle = "#000"; x.fillRect(0, 0, cv.width, cv.height);
+    var kick = ISSUES[EPI].kick || "TRAIL RUNNING · PODCAST";
+    /* 1) 사진: 오른쪽은 선명, 왼쪽은 사라짐, 아래는 검정으로 녹음 */
+    if (igImg) {
+      var pw = IGW * S, ph = 342 * S, pc = document.createElement("canvas"); pc.width = pw; pc.height = ph;
+      var px = pc.getContext("2d"), sc = Math.max(pw / igImg.naturalWidth, ph / igImg.naturalHeight), dw = igImg.naturalWidth * sc, dh = igImg.naturalHeight * sc;
+      px.drawImage(igImg, (pw - dw) / 2, (ph - dh) / 2, dw, dh);
+      px.save(); px.globalCompositeOperation = "source-atop";
+      var sg = px.createLinearGradient(0, 0, 0, ph); sg.addColorStop(0, "rgba(0,0,0,.4)"); sg.addColorStop(.18, "rgba(0,0,0,.1)"); sg.addColorStop(1, "rgba(0,0,0,.12)");
+      px.fillStyle = sg; px.fillRect(0, 0, pw, ph); px.restore();
+      igMask(pc, true, [[0, 1], [.52, 1], [.98, 0], [1, 0]]);
+      var spn = igSpan(), hs = []; for (var q = 0; q <= 24; q++) hs.push([q / 24, igPhotoA(q / 24, spn)]); igMask(pc, false, hs);
+      x.drawImage(pc, 0, -50 * S);
+    }
+    /* 2) 패턴: 등고선을 좌우 뒤집어, 왼쪽은 진하고 오른쪽은 옅게 */
+    var seed = ((ART["ep" + EPI] || {}).seed || 31) + k * 7;
+    var tmp = document.createElement("canvas"); drawArt(tmp, { motif: "contour", seed: seed, start: 0.08, end: 0.8, lw: 0.7, dpr: 3 }, 540, 330);
+    var spn2 = igImg ? igSpan() : { x0: 0.6, x1: 1 }, aw = 810 * S, ah = 495 * S, ac = document.createElement("canvas"); ac.width = aw; ac.height = ah;
+    /* 선이 몰린 곳이 패턴이 진한 쪽(인물이 없는 쪽)에 오도록 좌우를 고른다 */
+    var dc = document.createElement("canvas"); dc.width = 54; dc.height = 33; var dx = dc.getContext("2d"); dx.drawImage(tmp, 0, 0, 54, 33);
+    var dd = dx.getImageData(0, 0, 54, 33).data, dens = [], cc, rr2; for (cc = 0; cc < 54; cc++) { var sm = 0; for (rr2 = 0; rr2 < 33; rr2++) sm += dd[(rr2 * 54 + cc) * 4 + 3]; dens.push(sm); }
+    var sN = 0, sF = 0; for (cc = 0; cc < 54; cc++) { var tn = (((cc + .5) / 54) * 810 - 135) / 540, tf = (((53 - cc + .5) / 54) * 810 - 135) / 540; sN += dens[cc] * igPatA(Math.max(0, Math.min(1, ((cc + .5) / 54 * 810 - 135) / 540)), spn2); sF += dens[cc] * igPatA(Math.max(0, Math.min(1, (((53 - cc) + .5) / 54 * 810 - 135) / 540)), spn2); }
+    var ax = ac.getContext("2d");
+    if (sF >= sN) { ax.translate(aw, 0); ax.scale(-1, 1); } ax.drawImage(tmp, 0, 0, aw, ah); ax.setTransform(1, 0, 0, 1, 0, 0);
+    igMask(ac, true, [[0, 1], [.7, 1], [.92, 0], [1, 0]]);
+    var ps = []; for (var q2 = 0; q2 <= 32; q2++) { var X = q2 / 32, tt = Math.max(0, Math.min(1, (X * 810 - 135) / 540)); ps.push([X, igPatA(tt, spn2)]); }
+    igMask(ac, false, ps);
+    x.drawImage(ac, -135 * S, -36 * S);
+    /* 3) 글 */
+    x.save(); x.scale(S, S); x.textBaseline = "top";
+    var TF = '"Ownglyph","Chosun Nm","Wanted Sans","Apple SD Gothic Neo","Malgun Gothic",sans-serif', BF = '"Ridi Batang","Chosun Nm","Wanted Sans","Apple SD Gothic Neo","Malgun Gothic",serif';
+    x.shadowColor = "rgba(0,0,0,.9)"; x.shadowBlur = 5; x.shadowOffsetY = 1;
+    x.font = "500 11px " + SANS; x.fillStyle = "rgba(255,255,255,.85)"; igSpaced(x, kick, 36, 34, 2.2, false);
+    x.font = "700 13px " + SANS; x.fillStyle = "#FF5C9A"; x.textAlign = "right"; x.fillText(String(k + 1).padStart(2, "0"), IGW - 36, 32); x.textAlign = "left";
+    x.shadowColor = "transparent"; x.shadowBlur = 0; x.shadowOffsetY = 0;
+    var W = IGW - 72, tpx = 37.2, tlh = tpx * 1.25;
+    x.font = "400 " + tpx + "px " + TF; var tl = wrapText(x, plain(it.c.title), W); x.fillStyle = "#fff";
+    tl.forEach(function (t, j) { x.fillText(t, 36, 256 + j * tlh + (tlh - tpx) / 2); });
+    var extra = (tl.length - 1) * tlh, n = igItems.length, gap = 3, bw = (W - gap * (n - 1)) / n;
+    for (var b = 0; b < n; b++) { x.fillStyle = b <= k ? "#E0267A" : "rgba(255,255,255,.2)"; x.fillRect(36 + b * (bw + gap), 312 + extra, bw, 3); }
+    var paras = it.c.expl.map(plain), top0 = 338 + extra, limit = 626, bpx = 19.5, ratio = 26.4 / 19.5, lines;
+    function layout(px) { x.font = "400 " + px + "px " + BF; return paras.map(function (t) { return wrapText(x, t, W); }); }
+    lines = layout(bpx);
+    function hgt(L, px) { var h = 0; L.forEach(function (a, i) { h += a.length * px * ratio + (i ? 12 : 0); }); return h; }
+    while (top0 + hgt(lines, bpx) > limit && bpx > 13) { bpx -= .25; lines = layout(bpx); }
+    var yy = top0; x.fillStyle = "rgba(255,255,255,.92)"; x.font = "400 " + bpx + "px " + BF;
+    lines.forEach(function (L, i) { if (i) yy += 12; L.forEach(function (t) { x.fillText(t, 36, yy + (bpx * ratio - bpx) / 2); yy += bpx * ratio; }); });
+    x.font = "700 11px " + '"Bithumb Gothic","Wanted Sans",sans-serif'; x.fillStyle = "#fff"; x.fillText("오늘의 트레일", 36, IGH - 28 - 11);
+    x.font = "500 11px " + SANS; x.fillStyle = "rgba(255,255,255,.6)"; x.textAlign = "right"; x.fillText(plain(ISSUES[EPI].who), IGW - 36, IGH - 28 - 11); x.textAlign = "left";
+    x.restore();
+    return new Promise(function (res) { cv.toBlob(function (bl) { res(new File([bl], "오늘의트레일_인스타_" + String(k + 1).padStart(2, "0") + ".png", { type: "image/png" })); }, "image/png"); });
+  }
+  igGo.addEventListener("click", function () {
+    var sel = igSel(); if (!sel.length) return;
+    igGo.disabled = true; igResetOut(); igSt.textContent = "만드는 중…";
+    Promise.all(['400 20px "Ridi Batang"', '400 20px "Ownglyph"', '500 12px "Wanted Sans"', '700 12px "Bithumb Gothic"'].map(function (f) { return document.fonts.load(f, "가Aa1"); })).catch(function () {}).then(function () {
+      var out = [], chain = Promise.resolve();
+      sel.forEach(function (k, j) {
+        chain = chain.then(function () { igSt.textContent = "만드는 중… " + (j + 1) + " / " + sel.length; return igRender(igItems[k], k); }).then(function (f) {
+          out.push(f); var im = new Image(); im.alt = igItems[k].c.title; im.src = URL.createObjectURL(f); igOut.appendChild(im);
+        });
+      });
+      return chain.then(function () { igFiles = out; });
+    }).then(function () {
+      igGo.disabled = false; igCount();
+      igSave.style.display = ""; igSave.textContent = "이미지 " + igFiles.length + "장 저장하기";
+      igSt.textContent = "만들었습니다. 저장하기를 누르면 사진 앱에 저장할 수 있습니다.";
+    }).catch(function (e) { igGo.disabled = false; igCount(); igSt.textContent = "이미지를 만들지 못했습니다: " + e; });
+  });
+  igSave.addEventListener("click", function () {
+    var files = igFiles; if (!files.length) return;
+    if (navigator.canShare && navigator.canShare({ files: files }) && navigator.share) {
+      navigator.share({ files: files, title: "오늘의 트레일" }).then(function () { igSt.textContent = "저장 창에서 '이미지 저장'을 선택하세요."; }).catch(function () { igSt.textContent = "저장을 취소했습니다."; });
+      return;
+    }
+    files.forEach(function (f, i) { setTimeout(function () { var a = document.createElement("a"); a.href = URL.createObjectURL(f); a.download = f.name; document.body.appendChild(a); a.click(); a.remove(); }, i * 350); });
+    igSt.textContent = files.length + "장을 내려받았습니다.";
   });
 
   /* ---------- 선택한 글만 이미지로 저장 (3:4 고정, 글자 크기 소/중/대, 500자 제한) ---------- */
