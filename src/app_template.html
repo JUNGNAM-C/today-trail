@@ -1,6 +1,7 @@
 <title>오늘의 트레일</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
+@font-face { font-family: "Bithumb Gothic"; font-weight: 100 900; font-style: normal; font-display: swap; src: url("fonts/BithumbGothic.woff2") format("woff2"); }
 @font-face { font-family: "Chosun Nm"; font-weight: 400; font-style: normal; font-display: swap; src: url("fonts/ChosunNm.woff2") format("woff2"); }
 @font-face { font-family: "Wanted Sans"; font-weight: 400; font-style: normal; font-display: swap; src: url("fonts/WantedSans-Regular.woff2") format("woff2"); }
 @font-face { font-family: "Wanted Sans"; font-weight: 500; font-style: normal; font-display: swap; src: url("fonts/WantedSans-Medium.woff2") format("woff2"); }
@@ -60,8 +61,8 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, .deck:focus-visib
 .hero > *:not(.art) { z-index: 1; }
 .kick { font-family: var(--font-data); font-size: 12.5px; letter-spacing: .18em; opacity: .8; }
 .en-title { font-family: var(--font-quote); font-weight: 500; font-size: 33px; line-height: 1.12; letter-spacing: -.01em; max-width: 12ch; margin-top: 18px; }
-.ko-title { font-family: var(--font-display); font-weight: 700; font-size: 15px; line-height: 1.5; }
-.who { font-size: 14.5px; font-weight: 600; letter-spacing: .02em; }
+.ko-title { font-family: "Bithumb Gothic", var(--font-display); font-weight: 700; font-size: 15px; line-height: 1.5; }
+.who { font-family: "Bithumb Gothic", var(--font-display); font-size: 15px; font-weight: 700; letter-spacing: .02em; }
 .pg { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
 .pg .bars { flex: 1; display: flex; gap: 3px; }
 .pg .bars i { flex: 1; height: 4px; border-radius: 2px; background: color-mix(in srgb, currentColor 25%, transparent); }
@@ -1178,7 +1179,7 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
     for (; spx >= 9; spx--) { x.font = "400 " + spx + "px " + SANS; sl = []; srcT.forEach(function (s) { wrapText(x, s, Q_W - 2 * Q_PAD).forEach(function (l) { sl.push(l); }); }); if (sl.length <= srcT.length) break; }
     slh = Math.round(spx * 1.55 * 0.8); x.fillStyle = "#666";
     sl.forEach(function (l, i) { x.fillText(l, Q_PAD, ay + i * slh); });
-    x.textBaseline = "alphabetic"; x.textAlign = "right"; x.font = "500 13px " + MONO; x.fillStyle = "#FF5C9A"; x.fillText("오늘의 트레일", Q_W - 22, Q_H - 22); x.textAlign = "left";
+    x.textBaseline = "alphabetic"; x.textAlign = "right"; x.font = "700 13px \"Bithumb Gothic\", " + SANS; x.fillStyle = "#FF5C9A"; x.fillText("오늘의 트레일", Q_W - 22, Q_H - 22); x.textAlign = "left";
     x.restore();
     x.restore();
     return new Promise(function (res) { f.toBlob(function (b) { res({ file: new File([b], "오늘의트레일_선택문장.png", { type: "image/png" }), shrunk: L.shrunk }); }, "image/png"); });
@@ -1187,7 +1188,7 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
     var text = qText, c = cards[qIdx] || {}, c0 = cards[0];
     if (!text || qLen > Q_MAX) return;
     toast("이미지 만드는 중…");
-    var ready = Promise.all(['500 14px "Wanted Sans"', '400 13px "Wanted Sans"', '400 20px "Chosun Nm"'].map(function (f) { return document.fonts.load(f, "가Aa1"); })).catch(function () {});
+    var ready = Promise.all(['500 14px "Wanted Sans"', '400 13px "Wanted Sans"', '400 20px "Chosun Nm"', '700 13px "Bithumb Gothic"'].map(function (f) { return document.fonts.load(f, "가Aa1"); })).catch(function () {});
     ready.then(function () { return makeQuote(text, c0, c, qSize); }).then(function (r) {
       var note = r.shrunk ? " (글이 길어 크기를 자동으로 줄였습니다)" : "";
       var share = navigator.canShare && navigator.canShare({ files: [r.file] }) && navigator.share;
