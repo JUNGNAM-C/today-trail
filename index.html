@@ -2459,7 +2459,7 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
       x.drawImage(pc, 0, -50 * S);
     }
     /* 2) 패턴: 등고선을 좌우 뒤집어, 왼쪽은 진하고 오른쪽은 옅게 */
-    var seed = 5;
+    var seed = window.__igSeed || 53;
     var tmp = document.createElement("canvas"); drawArt(tmp, { motif: "contour", seed: seed, start: 0.08, end: 0.8, lw: 0.7, dpr: 3 }, 540, 330);
     var spn2 = igImg ? igSpan() : { x0: 0.6, x1: 1 }, aw = 810 * S, ah = 495 * S, ac = document.createElement("canvas"); ac.width = aw; ac.height = ah;
     /* 선이 몰린 곳이 패턴이 진한 쪽(인물이 없는 쪽)에 오도록 좌우를 고른다 */
