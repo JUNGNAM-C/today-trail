@@ -1341,7 +1341,10 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
       var ty = 256 + j * tlh + (tlh - tpx) / 2;
       if (sfx && j === tl.length - 1 && t.slice(-sfx.length) === sfx) {
         var pre = t.slice(0, t.length - sfx.length); x.fillStyle = "#fff"; x.fillText(pre, 36, ty);
-        x.fillStyle = "#FF5C9A"; x.fillText(sfx, 36 + x.measureText(pre).width, ty); x.fillStyle = "#fff";
+        var pw2 = x.measureText(pre).width; x.textBaseline = "alphabetic"; var mm = x.measureText("가"), asc = mm.fontBoundingBoxAscent, dsc = mm.fontBoundingBoxDescent;
+        var base = ty + asc - ((asc + dsc) - tpx) / 2;           /* 제목과 같은 기준선에 맞춘다 */
+        x.font = "400 " + (tpx * 0.5) + "px " + TF; x.fillStyle = "#FF5C9A"; x.fillText(sfx, 36 + pw2, base);
+        x.font = "400 " + tpx + "px " + TF; x.textBaseline = "top"; x.fillStyle = "#fff";
       } else x.fillText(t, 36, ty);
     });
     var extra = (tl.length - 1) * tlh, n = igItems.length, gap = 3, bw = (W - gap * (n - 1)) / n;
