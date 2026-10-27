@@ -242,7 +242,7 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
 .igbtn { appearance: none; border: 1px solid #555; background: #1A1A1A; color: #F0F0F0; border-radius: 12px; min-height: 44px; padding: 0 14px; font-size: 15px; cursor: pointer; }
 .igrow { display: flex; align-items: center; gap: 8px; margin: 14px 0 8px; flex-wrap: wrap; }
 .igcnt { margin-left: auto; font-size: 13.5px; color: #A8A8A8; }
-.igpos[aria-pressed="true"] { background: #FF5C9A; color: #1A0A12; border-color: #FF5C9A; font-weight: 700; }
+.igpos[aria-pressed="true"], .igdn[aria-pressed="true"] { background: #FF5C9A; color: #1A0A12; border-color: #FF5C9A; font-weight: 700; }
 .igth { display: none; width: 72px; height: 54px; object-fit: cover; border-radius: 8px; border: 1px solid #444; }
 .igth.on { display: inline-block; }
 .iglist { display: flex; flex-direction: column; gap: 6px; max-height: 38vh; overflow-y: auto; border: 1px solid #2A2A2A; border-radius: 12px; padding: 6px; }
@@ -1186,13 +1186,14 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
     '<p class="ighint">사진을 올리면 인물이 있는 쪽은 사진을 선명하게 살리고, 반대쪽은 패턴으로 자연스럽게 이어 붙입니다. 인물 위치는 자동으로 찾고, 틀리면 직접 고를 수 있습니다. 사진을 고르지 않으면 패턴만으로 만듭니다. 사진은 이 기기 안에서만 처리되고 어디에도 올라가지 않습니다. 사진은 사용 허락을 확인한 것만 쓰세요.</p>' +
     '<div class="igrow"><label class="igbtn" for="igf" style="display:inline-flex;align-items:center">사진 선택</label><input type="file" id="igf" accept="image/*" style="position:absolute;left:-9999px"><img class="igth" id="igth" alt="선택한 사진"><button type="button" class="igbtn" id="igclr" style="display:none">사진 빼기</button></div>' +
     '<div class="igrow" id="igposrow" style="display:none"><span style="font-size:14px;color:#A8A8A8">인물 위치</span><button type="button" class="igbtn igpos" data-p="auto" aria-pressed="true">자동</button><button type="button" class="igbtn igpos" data-p="left" aria-pressed="false">왼쪽</button><button type="button" class="igbtn igpos" data-p="center" aria-pressed="false">가운데</button><button type="button" class="igbtn igpos" data-p="right" aria-pressed="false">오른쪽</button></div>' +
+    '<div class="igrow" id="igdnrow" style="display:none"><span style="font-size:14px;color:#A8A8A8">사진 세로 위치</span><button type="button" class="igbtn igdn" data-d="0" aria-pressed="true">기본</button><button type="button" class="igbtn igdn" data-d="25" aria-pressed="false">조금 내리기</button><button type="button" class="igbtn igdn" data-d="50" aria-pressed="false">많이 내리기</button></div>' +
     '<div class="igrow"><button type="button" class="igbtn" id="igall">전체 선택</button><button type="button" class="igbtn" id="ignone">선택 해제</button><span class="igcnt" id="igcnt" aria-live="polite"></span></div>' +
     '<div class="iglist" id="iglist"></div>' +
     '<div class="igact"><button type="button" class="saveall" id="iggo">이미지 만들기</button><button type="button" class="saveall" id="igsave" style="display:none">저장하기</button><span class="saved" id="igst" aria-live="polite"></span></div>' +
     '<div class="igout" id="igout"></div>';
   document.body.appendChild(igEl);
   var igList = igEl.querySelector("#iglist"), igCnt = igEl.querySelector("#igcnt"), igGo = igEl.querySelector("#iggo"), igSave = igEl.querySelector("#igsave"), igSt = igEl.querySelector("#igst"), igOut = igEl.querySelector("#igout"), igTh = igEl.querySelector("#igth"), igClr = igEl.querySelector("#igclr");
-  var igItems = [], igPos = "auto", igSubj = null;
+  var igItems = [], igPos = "auto", igSubj = null, igDown = 0;
   cards.forEach(function (c, i) { if (!c.cover && !c.memo) igItems.push({ c: c, i: i }); });
   igList.innerHTML = igItems.map(function (it, k) {
     return '<label class="igitem"><input type="checkbox" data-k="' + k + '" checked><span class="n">' + String(k + 1).padStart(2, "0") + '</span><span>' + plain(it.c.title) + '</span></label>';
@@ -1206,14 +1207,21 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
   igEl.querySelector("#igf").addEventListener("change", function (ev) {
     var f = ev.target.files && ev.target.files[0]; if (!f) return;
     var url = URL.createObjectURL(f), im = new Image();
-    im.onload = function () { igImg = im; igSubj = igFindSubject(im); igEl.querySelector("#igposrow").style.display = ""; igTh.src = url; igTh.classList.add("on"); igClr.style.display = ""; igResetOut(); };
+    im.onload = function () { igImg = im; igSubj = igFindSubject(im); igEl.querySelector("#igposrow").style.display = ""; igEl.querySelector("#igdnrow").style.display = ""; igTh.src = url; igTh.classList.add("on"); igClr.style.display = ""; igResetOut(); };
     im.onerror = function () { igSt.textContent = "이 사진은 열 수 없습니다. 다른 사진을 골라 주세요."; };
     im.src = url;
   });
-  igClr.addEventListener("click", function () { igImg = null; igTh.classList.remove("on"); igClr.style.display = "none"; igEl.querySelector("#igposrow").style.display = "none"; igEl.querySelector("#igf").value = ""; igResetOut(); });
+  igClr.addEventListener("click", function () { igImg = null; igTh.classList.remove("on"); igClr.style.display = "none"; igEl.querySelector("#igposrow").style.display = "none"; igEl.querySelector("#igdnrow").style.display = "none"; igEl.querySelector("#igf").value = ""; igResetOut(); });
   document.getElementById("igopen").addEventListener("click", function () { igEl.classList.add("on"); igEl.scrollTop = 0; igCount(); });
   igEl.querySelector("#igx").addEventListener("click", function () { igEl.classList.remove("on"); });
 
+  Array.prototype.forEach.call(igEl.querySelectorAll(".igdn"), function (b) {
+    b.addEventListener("click", function () {
+      igDown = +b.getAttribute("data-d");
+      Array.prototype.forEach.call(igEl.querySelectorAll(".igdn"), function (o) { o.setAttribute("aria-pressed", o === b ? "true" : "false"); });
+      igResetOut();
+    });
+  });
   Array.prototype.forEach.call(igEl.querySelectorAll(".igpos"), function (b) {
     b.addEventListener("click", function () {
       igPos = b.getAttribute("data-p");
@@ -1314,7 +1322,7 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
     if (igImg) {
       var pw = IGW * S, ph = 342 * S, pc = document.createElement("canvas"); pc.width = pw; pc.height = ph;
       var px = pc.getContext("2d"), sc = Math.max(pw / igImg.naturalWidth, ph / igImg.naturalHeight), dw = igImg.naturalWidth * sc, dh = igImg.naturalHeight * sc;
-      px.drawImage(igImg, (pw - dw) / 2, (ph - dh) / 2, dw, dh);
+      px.drawImage(igImg, (pw - dw) / 2, (ph - dh) / 2 + igDown * S, dw, dh);
       px.save(); px.globalCompositeOperation = "source-atop";
       var sg = px.createLinearGradient(0, 0, 0, ph); sg.addColorStop(0, "rgba(0,0,0,.4)"); sg.addColorStop(.18, "rgba(0,0,0,.1)"); sg.addColorStop(1, "rgba(0,0,0,.12)");
       px.fillStyle = sg; px.fillRect(0, 0, pw, ph); px.restore();
