@@ -708,9 +708,9 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
       var cf = function (u, v) { var t = 0.05 * Math.sin(u * 4 + v * 3 + a.seed); for (var q = 0; q < CK; q++) { var b = cb[q]; t += b.a * Math.exp(-Math.pow((u - b.x) / b.sx, 2) - Math.pow((v - b.y) / b.sy, 2)); } var wu = Math.cos(u * Math.PI / 2), wv = Math.cos(v * Math.PI / 2); return t * Math.pow(Math.max(0, wu * wv), 0.9); };
       var cV = [], cx0 = cx - hw, cy0 = cy - ry * 1.15, cw = hw * 2 / CG, ch2 = ry * 2.3 / CH, ci, cj;
       for (cj = 0; cj <= CH; cj++) { cV.push([]); for (ci = 0; ci <= CG; ci++) cV[cj].push(cf(ci / CG * 2 - 1, cj / CH * 2 - 1)); }
-      var NL = 14;
+      var NL = 14, cmax = 0; cV.forEach(function (rw) { rw.forEach(function (q) { if (q > cmax) cmax = q; }); });
       for (var lv = 1; lv <= NL; lv++) {
-        var th2 = lv / (NL + 1) * 1.35, thick = (lv % 4 === 0);
+        var th2 = 0.05 + (cmax * 0.985 - 0.05) * (lv - 1) / (NL - 1), thick = (lv % 4 === 0);
         ctx.beginPath();
         for (cj = 0; cj < CH; cj++) for (ci = 0; ci < CG; ci++) {
           var v00 = cV[cj][ci], v10 = cV[cj][ci + 1], v11 = cV[cj + 1][ci + 1], v01 = cV[cj + 1][ci], pt = [];
