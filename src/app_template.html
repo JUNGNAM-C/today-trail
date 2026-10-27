@@ -1249,9 +1249,10 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
   window.__igFind = igFindSubject;
   function igSpan() {
     if (igPos === "left") return { x0: 0.02, x1: 0.48 };
-    if (igPos === "center") return { x0: 0.28, x1: 0.72 };
+    if (igPos === "center") return { x0: 0.34, x1: 0.66 };
     if (igPos === "right") return { x0: 0.52, x1: 0.98 };
     var sj = igSubj || { x0: 0.55, x1: 0.95 }, wd = Math.max(sj.x1 - sj.x0, 0.3), cx = (sj.x0 + sj.x1) / 2;
+    if (Math.abs(cx - 0.5) <= 0.1) return { x0: 0.34, x1: 0.66 };
     return { x0: Math.max(0, cx - wd / 2), x1: Math.min(1, cx + wd / 2) };
   }
   function igSmooth(a, b, t) { t = Math.max(0, Math.min(1, (t - a) / (b - a))); return t * t * (3 - 2 * t); }
@@ -1265,7 +1266,9 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
     return igLerp(d, [[0, 1], [0.05, 1], [0.12, 0.55], [0.38, 0], [2, 0]]);
   }
   function igAnchorLeft(sp) { return (sp.x0 + sp.x1) / 2 >= 0.5; }
+  function igBoth(sp) { return Math.abs((sp.x0 + sp.x1) / 2 - 0.5) <= 0.1; }
   function igPatA(t, sp) {
+    if (igBoth(sp)) { var w = Math.min(t, 1 - t); return Math.max(0.025, (1 - 0.85 * igSmooth(0.1, 0.5, w)) * (1 - 0.3 * igSmooth(0.8, 1, igPhotoA(t, sp)))); }
     var u = igAnchorLeft(sp) ? t : 1 - t, base = u <= 0.08 ? 1 : Math.max(0.025, 1 - (u - 0.08) / 1.17 * 0.975);
     return Math.max(0.025, base * (1 - 0.7 * igSmooth(0.8, 1, igPhotoA(t, sp))));
   }
@@ -1339,7 +1342,16 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
     var dd = dx.getImageData(0, 0, 54, 33).data, dens = [], cc, rr2; for (cc = 0; cc < 54; cc++) { var sm = 0; for (rr2 = 0; rr2 < 33; rr2++) sm += dd[(rr2 * 54 + cc) * 4 + 3]; dens.push(sm); }
     var sN = 0, sF = 0; for (cc = 0; cc < 54; cc++) { var tn = (((cc + .5) / 54) * 810 - 135) / 540, tf = (((53 - cc + .5) / 54) * 810 - 135) / 540; sN += dens[cc] * igPatA(Math.max(0, Math.min(1, ((cc + .5) / 54 * 810 - 135) / 540)), spn2); sF += dens[cc] * igPatA(Math.max(0, Math.min(1, (((53 - cc) + .5) / 54 * 810 - 135) / 540)), spn2); }
     var ax = ac.getContext("2d");
+    if (igImg && igBoth(spn2)) {
+      /* 인물이 가운데: 왼쪽과 오른쪽에 서로 다른 지형 패턴을 놓고, 가운데는 옅게 둔다 */
+      var tmpL = document.createElement("canvas"); drawArt(tmpL, { motif: "contour", seed: window.__igSeedL || 22, start: 0.08, end: 0.8, lw: 0.7, dpr: 3 }, 540, 330);
+      var tmpR = document.createElement("canvas"); drawArt(tmpR, { motif: "contour", seed: window.__igSeedR || 40, start: 0.08, end: 0.8, lw: 0.7, dpr: 3 }, 540, 330);
+      var aL = document.createElement("canvas"); aL.width = aw; aL.height = ah; aL.getContext("2d").drawImage(tmpL, 0, 0, aw, ah); igMask(aL, false, [[0, 1], [.5, 1], [.62, 0], [1, 0]]);
+      var aR = document.createElement("canvas"); aR.width = aw; aR.height = ah; var arx = aR.getContext("2d"); arx.translate(aw, 0); arx.scale(-1, 1); arx.drawImage(tmpR, 0, 0, aw, ah); arx.setTransform(1, 0, 0, 1, 0, 0); igMask(aR, false, [[0, 0], [.38, 0], [.5, 1], [1, 1]]);
+      ax.drawImage(aL, 0, 0); ax.drawImage(aR, 0, 0);
+    } else {
     if (sF >= sN) { ax.translate(aw, 0); ax.scale(-1, 1); } ax.drawImage(tmp, 0, 0, aw, ah); ax.setTransform(1, 0, 0, 1, 0, 0);
+    }
     igMask(ac, true, [[0, 1], [.7, 1], [.92, 0], [1, 0]]);
     var ps = []; for (var q2 = 0; q2 <= 32; q2++) { var X = q2 / 32, tt = Math.max(0, Math.min(1, (X * 810 - 135) / 540)); ps.push([X, igPatA(tt, spn2)]); }
     igMask(ac, false, ps);
