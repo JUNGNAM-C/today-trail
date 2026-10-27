@@ -13,10 +13,10 @@
   --bg: #F0F0F0; --surface: #FFFFFF; --ink: #1A1A1A; --muted: #5F5F5F; --line: #D4D4D4;
   --quote-bg: #E6E6E6; --accent: #D61F69; --accent-ink: #FFFFFF; --ok: #3A3A3A; --ok-bg: #E4E4E4;
   --warn: #8A3B12; --warn-bg: #F6E3D6; --interp: #8A5A00; --interp-bg: #F6EBCF;
-  --font-display: "Wanted Sans", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
-  --font-quote: "Wanted Sans", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
-  --font-body: "Wanted Sans", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
-  --font-data: "Wanted Sans", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --font-display: "Wanted Sans", "Apple SD Gothic Neo", "Malgun Gothic", "Hiragino Sans", "Yu Gothic", "Noto Sans CJK JP", system-ui, sans-serif;
+  --font-quote: "Wanted Sans", "Apple SD Gothic Neo", "Malgun Gothic", "Hiragino Sans", "Yu Gothic", "Noto Sans CJK JP", system-ui, sans-serif;
+  --font-body: "Wanted Sans", "Apple SD Gothic Neo", "Malgun Gothic", "Hiragino Sans", "Yu Gothic", "Noto Sans CJK JP", system-ui, sans-serif;
+  --font-data: "Wanted Sans", "Apple SD Gothic Neo", "Malgun Gothic", "Hiragino Sans", "Yu Gothic", "Noto Sans CJK JP", system-ui, sans-serif;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -259,12 +259,22 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
       </article>
 
-      <article class="hero ibox today" data-i="1" aria-label="오늘 호">
+      <article class="hero ibox sm keepart" data-i="2" aria-label="이전 호">
         <canvas class="art" data-art="ep4" aria-hidden="true"></canvas>
-        <div class="kick">TRAIL RUNNING · PODCAST</div>
+        <div class="kick">PREVIOUS · 10.27</div>
         <div class="en-title" lang="en">Dean Karnazes Is Running For Good: Lessons On Longevity &amp; Embracing Discomfort</div>
         <div class="ko-title">딘 카르나제스는 좋은 일을 위해 달린다: 장수와 불편함을 받아들이는 법</div>
         <div class="who">Dean Karnazes · Rich Roll Podcast</div>
+        <button type="button" class="cta" id="prev4-cta"><span id="prev4-cta-t">읽기</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+      </article>
+
+      <article class="hero ibox today" data-i="3" aria-label="오늘 호">
+        <canvas class="art" data-art="ep5" aria-hidden="true"></canvas>
+        <div class="kick">TRAIL RUNNING · INTERVIEW</div>
+        <div class="en-title" lang="en">Tsuyoshi Kaburaki: The Most Important Thing Is a Playful Heart</div>
+        <div class="ko-title">카부라키 츠요시: 가장 중요한 것은 놀이하는 마음</div>
+        <div class="who">Tsuyoshi Kaburaki · 일본의 프로 트레일 러너</div>
         <div class="pg" id="hero-pg" hidden><div class="bars" id="hero-bars"></div><span id="hero-count"></span></div>
         <button type="button" class="cta" id="hero-cta"><span id="hero-cta-t">읽기</span>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
@@ -281,9 +291,9 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
       <article class="hero ibox sm" data-i="3" aria-label="다음 호 후보">
         <canvas class="art" data-art="c3" aria-hidden="true"></canvas>
         <div class="kick">NEXT · 후보</div>
-        <div class="en-title" lang="en">Tsuyoshi Kaburaki: Interview</div>
-        <div class="ko-title">카부라키 츠요시: 경주할 때 가장 살아 있다고 느낀다</div>
-        <div class="who">Houyhnhnm · 일본의 트레일 러너</div>
+        <div class="en-title" lang="en">Mira Rai: Interview</div>
+        <div class="ko-title">미라 라이: 네팔의 트레일 러너 이야기</div>
+        <div class="who">후보 · 아시아의 트레일 러너</div>
       </article>
     </div>
   </section>
@@ -348,15 +358,17 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
 /*CARDS2*/
 /*CARDS3*/
 /*CARDS4*/
+/*CARDS5*/
 
   /* ---------- 호(issue) 목록. 읽는 호는 주소 해시(#ep=1)로 정하고, 기본은 가장 최신 호 ---------- */
   var ISSUES = {
     1: { cards: cards1, pkey: "trailapp-progress-v1", mkey: "trailcard-puppi-v1", date: "10.23 금", thumb: "Logic, Pain…", ko: "논리, 고통, 그리고 울트라 러닝의 현실", who: "Francesco Puppi", sec: "FRANCESCO PUPPI", q: "내가 마지막으로 힘들었던 러닝에서, 나는 고통과 어떻게 협상했나?" },
     3: { cards: cards3, pkey: "trailapp-progress-ep3", mkey: "trailcard-jornet2-v1", date: "10.26 월", thumb: "Summiting…", ko: "킬리안 조르넷: 세계 최고의 산악 러너, 그의 마음속으로", who: "Kílian Jornet", sec: "KÍLIAN JORNET · RICH ROLL", q: "내가 달리는 이유를 한 문장으로 쓰면, ‘해야 해서’와 ‘하고 싶어서’ 중 무엇이 더 많은가?" },
     4: { cards: cards4, pkey: "trailapp-progress-ep4", mkey: "trailcard-karnazes-v1", date: "10.27 화", thumb: "Dean Karnazes…", ko: "딘 카르나제스는 좋은 일을 위해 달린다: 장수와 불편함을 받아들이는 법", who: "Dean Karnazes", sec: "DEAN KARNAZES · RICH ROLL", q: "최근 달리기에서 불편함을 피한 순간과, 일부러 그 속에 머문 순간은 각각 언제였나?" },
+    5: { cards: cards5, pkey: "trailapp-progress-ep5", mkey: "trailcard-kaburaki-v1", date: "10.27 화", thumb: "Tsuyoshi Kaburaki…", ko: "카부라키 츠요시: 가장 중요한 것은 놀이하는 마음", who: "Tsuyoshi Kaburaki", sec: "TSUYOSHI KABURAKI", kick: "TRAIL RUNNING · INTERVIEW", q: "해야 하는 연습을 ‘놀이’라고 부르면, 달리기는 나에게 어떻게 달라질까?" },
     2: { cards: cards2, pkey: "trailapp-progress-ep2", mkey: "trailcard-jornet-v1", date: "10.26 월 · 보관", thumb: "Kílian Jornet…", ko: "킬리안 조르넷: 몸을 극한까지 밀어붙여 배울 수 있는 것", who: "Kílian Jornet", sec: "KÍLIAN JORNET", q: "내가 가장 한계에 가까웠던 순간, 무엇이 나를 멈추게 하거나 계속 가게 했나?" }
   };
-  var LATEST = 4;
+  var LATEST = 5;
   var EPm = /ep=(\d+)/.exec(location.hash);
   var EPI = EPm && ISSUES[EPm[1]] ? Number(EPm[1]) : LATEST;
   var OPEN_AT_LOAD = /open/.test(location.hash);
@@ -409,7 +421,7 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
       el.setAttribute("aria-label", "표지");
       el.innerHTML =
         '<canvas class="art" id="art-cover" aria-hidden="true"></canvas>' +
-        '<p class="cv-kick">TRAIL RUNNING · PODCAST</p>' +
+        '<p class="cv-kick">' + (c.kick || "TRAIL RUNNING · PODCAST") + '</p>' +
         '<h2 class="cv-title" lang="en">' + c.en + '</h2>' +
         '<p class="cv-ko">' + c.ko + '</p>' +
         '<p class="cv-who"><b>' + c.who + '</b></p>' +
@@ -439,7 +451,7 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
     }
 
     if (c.bridge) h += '<p class="bridge">' + c.bridge + '</p>';
-    h += '<div class="orig"><div class="lbrow"><p class="lab">ORIGINAL</p><p class="by">' + c.orig.by + ' · ' + link(c.orig.url, c.orig.link) + '</p></div><p class="q" lang="en">' + c.orig.text + '</p>' +
+    h += '<div class="orig"><div class="lbrow"><p class="lab">ORIGINAL</p><p class="by">' + c.orig.by + ' · ' + link(c.orig.url, c.orig.link) + '</p></div><p class="q" lang="' + (c.orig.lang || "en") + '">' + c.orig.text + '</p>' +
       '<p class="ko">' + c.ko + '</p></div>';
     h += '<div class="expl">' + paras(c.expl);
     if (c.terms && c.terms.length) {
@@ -576,11 +588,13 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
     document.getElementById("hero-cta-t").textContent = started ? "이어 읽기" : "읽기";
     document.getElementById("prev-cta-t").textContent = readProg(3).max >= 0 ? "이어 읽기" : "읽기";
     document.getElementById("prev1-cta-t").textContent = readProg(1).max >= 0 ? "이어 읽기" : "읽기";
+    document.getElementById("prev4-cta-t").textContent = readProg(4).max >= 0 ? "이어 읽기" : "읽기";
     requestAnimationFrame(layoutStack);
   }
   document.getElementById("hero-cta").addEventListener("click", function () { openIssue(LATEST); });
   document.getElementById("prev-cta").addEventListener("click", function () { openIssue(3); });
   document.getElementById("prev1-cta").addEventListener("click", function () { openIssue(1); });
+  document.getElementById("prev4-cta").addEventListener("click", function () { openIssue(4); });
 
 
 
@@ -594,12 +608,13 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
     ep2:   { motif: "dots6",  seed: 43 },
     ep3:   { motif: "loft",   seed: 417 },
     ep4:   { motif: "dots6",   seed: 2019 },
+    ep5:   { motif: "contour", seed: 31 },
     c1:    { motif: "flow",   seed: 618 },
     c3:    { motif: "scrawl", seed: 295 }
   };
   ART.today = ART["ep" + EPI];
   /* 선형 흑백 패턴 5종: burst(파동 다발) loft(곡면 선) dots6(점 메시) scrawl(스크리블) flow(흐르는 선). seed로 무작위 변형 */
-  var LINE_MOTIFS = { terrain: 1, burst: 1, loft: 1, dots6: 1, scrawl: 1, flow: 1 };
+  var LINE_MOTIFS = { terrain: 1, burst: 1, loft: 1, dots6: 1, scrawl: 1, flow: 1, contour: 1 };
   function rng(s) { s = s | 0; return function () { s = (s + 0x6D2B79F5) | 0; var t = Math.imul(s ^ (s >>> 15), 1 | s); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
   function drawLines(cv, a, w, h) {
     var dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -684,6 +699,30 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
         }
         var mx = 0; pts3.forEach(function (q) { mx = Math.max(mx, Math.abs(q[0] - cx)); }); if (mx < w * 0.62) { var kk = w * 0.62 / mx; pts3.forEach(function (q) { q[0] = cx + (q[0] - cx) * kk; }); }
         line(pts3, rr(0.6, 1.1), rr(0.45, 0.8));
+      }
+    } else if (a.motif === "contour") {
+      /* 등고선 지도: 부드러운 높낮이 위에서 같은 높이를 이은 닫힌 선들. 선끼리 겹치거나 교차하지 않는다 */
+      var CG = 150, CH = Math.round(CG * (ry * 2.3) / (hw * 2)), cb = [], cq;
+      var CK = 5 + (R() * 3 | 0);
+      for (cq = 0; cq < CK; cq++) cb.push({ x: rr(-0.8, 0.8), y: rr(-0.7, 0.7), a: rr(0.5, 1), sx: rr(0.14, 0.34), sy: rr(0.2, 0.5) });
+      var cf = function (u, v) { var t = 0.05 * Math.sin(u * 4 + v * 3 + a.seed); for (var q = 0; q < CK; q++) { var b = cb[q]; t += b.a * Math.exp(-Math.pow((u - b.x) / b.sx, 2) - Math.pow((v - b.y) / b.sy, 2)); } return t; };
+      var cV = [], cx0 = cx - hw, cy0 = cy - ry * 1.15, cw = hw * 2 / CG, ch2 = ry * 2.3 / CH, ci, cj;
+      for (cj = 0; cj <= CH; cj++) { cV.push([]); for (ci = 0; ci <= CG; ci++) cV[cj].push(cf(ci / CG * 2 - 1, cj / CH * 2 - 1)); }
+      var NL = 14;
+      for (var lv = 1; lv <= NL; lv++) {
+        var th2 = lv / (NL + 1) * 1.35, thick = (lv % 4 === 0);
+        ctx.beginPath();
+        for (cj = 0; cj < CH; cj++) for (ci = 0; ci < CG; ci++) {
+          var v00 = cV[cj][ci], v10 = cV[cj][ci + 1], v11 = cV[cj + 1][ci + 1], v01 = cV[cj + 1][ci], pt = [];
+          var ip = function (xa, ya, va, xb, yb, vb) { var tt = (th2 - va) / (vb - va); return [xa + (xb - xa) * tt, ya + (yb - ya) * tt]; };
+          var X0 = cx0 + ci * cw, Y0 = cy0 + cj * ch2;
+          if ((v00 < th2) !== (v10 < th2)) pt.push(ip(X0, Y0, v00, X0 + cw, Y0, v10));
+          if ((v10 < th2) !== (v11 < th2)) pt.push(ip(X0 + cw, Y0, v10, X0 + cw, Y0 + ch2, v11));
+          if ((v01 < th2) !== (v11 < th2)) pt.push(ip(X0, Y0 + ch2, v01, X0 + cw, Y0 + ch2, v11));
+          if ((v00 < th2) !== (v01 < th2)) pt.push(ip(X0, Y0, v00, X0, Y0 + ch2, v01));
+          if (pt.length >= 2) { ctx.moveTo(pt[0][0], pt[0][1]); ctx.lineTo(pt[1][0], pt[1][1]); if (pt.length === 4) { ctx.moveTo(pt[2][0], pt[2][1]); ctx.lineTo(pt[3][0], pt[3][1]); } }
+        }
+        ctx.lineWidth = thick ? 1.4 : 0.7; ctx.strokeStyle = "rgba(255,255,255," + (thick ? 0.95 : 0.7) + ")"; ctx.stroke();
       }
     } else {                                                      /* flow: 다발이 모였다 갈라지고, 가는 선이 가로지르며, 급하게 꺾인다 */
       var sig = function (x) { return 1 / (1 + Math.exp(-x)); };
@@ -943,7 +982,7 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
   var filter = "all";
   function renderArchive() {
     var box = document.getElementById("issues"), html = "", any = false;
-    [4, 3, 1, 2].forEach(function (k) {
+    [5, 4, 3, 1, 2].forEach(function (k) {
       var I = ISSUES[k], pr = readProg(k), n = I.cards.length;
       var started = pr.max >= 0, done = pr.max >= n - 1;
       var ok = filter === "all" || (filter === "ing" && started && !done) || (filter === "done" && done);
@@ -971,7 +1010,7 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
 
   function renderNotes() {
     var list = document.getElementById("notes-list"), html = "";
-    [4, 3, 1, 2].forEach(function (k) {
+    [5, 4, 3, 1, 2].forEach(function (k) {
       var I = ISSUES[k], m = readMemo(k);
       html += '<div class="sec">' + I.date.split(" ")[0] + ' · ' + I.sec + '</div><div class="note">' +
         '<p class="q">' + I.q + '</p>' +
@@ -981,7 +1020,7 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
     });
     list.innerHTML = html;
     var bodies = list.querySelectorAll(".body");
-    [4, 3, 1, 2].forEach(function (k, i) { var m = readMemo(k); bodies[i].textContent = m.memo || "아직 메모가 없습니다."; });
+    [5, 4, 3, 1, 2].forEach(function (k, i) { var m = readMemo(k); bodies[i].textContent = m.memo || "아직 메모가 없습니다."; });
     Array.prototype.forEach.call(list.querySelectorAll(".go"), function (b) {
       b.addEventListener("click", function () {
         var k = Number(b.getAttribute("data-k"));
@@ -997,8 +1036,8 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
 
   /* ---------- 전체 카드 이미지로 저장 (카드마다 글이 잘리지 않고 가득 차게, 1080px 폭) ---------- */
   var saveBtn = document.getElementById("saveall"), expSt = document.getElementById("exp-st"), exported = null;
-  var SANS = '"Wanted Sans","Apple SD Gothic Neo","Malgun Gothic",sans-serif', SERIFKO = SANS, QUOTE = SANS, MONO = SANS;
-  var BODYF = '"Chosun Nm","Wanted Sans","Apple SD Gothic Neo","Malgun Gothic",serif';
+  var SANS = '"Wanted Sans","Apple SD Gothic Neo","Malgun Gothic","Hiragino Sans","Yu Gothic","Noto Sans CJK JP",sans-serif', SERIFKO = SANS, QUOTE = SANS, MONO = SANS;
+  var BODYF = '"Chosun Nm","Wanted Sans","Apple SD Gothic Neo","Malgun Gothic","Hiragino Sans","Yu Gothic","Noto Sans CJK JP",serif';
   /* 제목이 잘리지 않게: 줄 수와 단어 길이가 맞을 때까지 글자 크기를 줄인다 */
   function fitPx(ctx, txt, weight, fam, px0, pxMin, maxW, maxLines) {
     var px = px0;
@@ -1039,7 +1078,7 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
     y = 210;
     if (c.cover) {
       y = 24;
-      line("TRAIL RUNNING · PODCAST", "400 13px " + MONO, "#B0B0B0", 18, P, TW);
+      line((ISSUES[EPI].kick || "TRAIL RUNNING · PODCAST"), "400 13px " + MONO, "#B0B0B0", 18, P, TW);
       y = 205;
       var enT = plain(c.en), enPx = fitPx(ctx, enT, 500, QUOTE, 40, 24, TW, 5);
       line(enT, "500 " + enPx + "px " + QUOTE, "#F0F0F0", Math.round(enPx * 1.13), P, TW); y += 14;
