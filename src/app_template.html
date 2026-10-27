@@ -124,7 +124,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, .deck:focus-visib
 #v-read { padding: 8px 16px 0; }
 .wrap { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 8px; }
 .head { display: flex; align-items: center; gap: 6px; }
-.back { appearance: none; border: 0; background: none; color: var(--ink); flex: none; width: 36px; height: 36px; margin-left: -8px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.back { appearance: none; border: 0; flex: none; width: 40px; height: 40px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: flex; align-items: center; justify-content: center; cursor: pointer; }
 .ctrls { display: flex; gap: 6px; }
 .mode { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; background: var(--surface); }
 .mode button { appearance: none; border: 0; background: none; color: var(--muted); padding: 0 12px; min-height: 36px; cursor: pointer; font-size: 14px; }
@@ -187,7 +187,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, .deck:focus-visib
 .wrap[data-mode="ko"] .orig .q, .wrap[data-mode="ko"] .orig .lab { display: none; }
 .wrap[data-mode="ko"] .orig .ko { border-top: 0; padding-top: 0; }
 .nav { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 2px 0 calc(10px + env(safe-area-inset-bottom, 0px)); }
-.navl, .navr { display: flex; gap: 6px; }
+.navl, .navr { display: flex; gap: 6px; align-items: center; }
 .tg { appearance: none; border: 1px solid var(--line); background: var(--surface); color: var(--muted); border-radius: 999px; min-height: 40px; padding: 0 13px; font-size: 14px; cursor: pointer; }
 .tg[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
 .nav button.step { appearance: none; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 999px; min-height: 40px; padding: 0 13px; font-size: 14px; cursor: pointer; }
@@ -296,13 +296,13 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
   <section class="view" id="v-read" aria-label="카드 읽기">
     <div class="wrap" id="wrap" data-mode="both" data-interp="on">
       <div class="head">
-        <button type="button" class="back" id="back" aria-label="홈으로">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>
         <div class="segs" id="segs" role="group" aria-label="카드 위치"></div>
       </div>
       <div class="deck" id="deck" tabindex="0" aria-label="카드 덱. 좌우 방향키나 밀어서 넘깁니다."></div>
       <div class="nav">
         <div class="navl">
+          <button type="button" class="back" id="back" aria-label="이전 화면으로 돌아가기">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
           <button type="button" class="tg" id="tg-en" aria-pressed="true">영문</button>
           <button type="button" class="tg" id="tg-ip" aria-pressed="true">해석</button>
         </div>
