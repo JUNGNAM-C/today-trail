@@ -2376,10 +2376,10 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
   }
   function igSmooth(a, b, t) { t = Math.max(0, Math.min(1, (t - a) / (b - a))); return t * t * (3 - 2 * t); }
   function igPhotoA(t, sp) {
-    var m = 0.03, F = 0.3, d = t < sp.x0 - m ? sp.x0 - m - t : (t > sp.x1 + m ? t - sp.x1 - m : 0);
+    var m = 0.03, F = 0.17, d = t < sp.x0 - m ? sp.x0 - m - t : (t > sp.x1 + m ? t - sp.x1 - m : 0);
     return 1 - igSmooth(0, F, d);
   }
-  function igPatA(t, sp) { return 0.025 + 0.975 * (1 - igSmooth(0.15, 0.85, igPhotoA(t, sp))); }
+  function igPatA(t, sp) { return 0.025 + 0.975 * (1 - igSmooth(0.6, 1.0, igPhotoA(t, sp))); }
   function igMask(cv, vertical, stops) {
     var x = cv.getContext("2d"); x.save(); x.globalCompositeOperation = "destination-in";
     var g = vertical ? x.createLinearGradient(0, 0, 0, cv.height) : x.createLinearGradient(0, 0, cv.width, 0);
