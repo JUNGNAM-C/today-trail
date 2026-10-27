@@ -2495,6 +2495,8 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
     var yy = top0; x.fillStyle = "rgba(255,255,255,.92)"; x.font = "400 " + bpx + "px " + BF;
     pg.forEach(function (L, i) { if (i) yy += 12; L.forEach(function (t) { x.fillText(t, 36, yy + (bpx * ratio - bpx) / 2); yy += bpx * ratio; }); });
     x.font = "700 11px " + '"Bithumb Gothic","Wanted Sans",sans-serif'; x.fillStyle = "#fff"; x.fillText("오늘의 트레일", 36, IGH - 28 - 11);
+    var bw2 = x.measureText("오늘의 트레일").width, dn = new Date(), ds = String(dn.getFullYear() % 100).padStart(2, "0") + String(dn.getMonth() + 1).padStart(2, "0") + String(dn.getDate()).padStart(2, "0");
+    x.font = "400 11px " + SANS; x.fillStyle = "rgba(255,255,255,.4)"; x.fillText(ds, 36 + bw2 + 8, IGH - 28 - 11);
     x.font = "500 11px " + SANS; x.fillStyle = "rgba(255,255,255,.6)"; x.textAlign = "right"; x.fillText(plain(ISSUES[EPI].who), IGW - 36, IGH - 28 - 11); x.textAlign = "left";
     x.restore();
     return new Promise(function (res) { cv.toBlob(function (bl) { res(new File([bl], "오늘의트레일_인스타_" + String(k + 1).padStart(2, "0") + (pn > 1 ? "_" + (pi + 1) : "") + ".png", { type: "image/png" })); }, "image/png"); });
