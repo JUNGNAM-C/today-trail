@@ -704,8 +704,8 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
       /* 등고선 지도: 부드러운 높낮이 위에서 같은 높이를 이은 닫힌 선들. 선끼리 겹치거나 교차하지 않는다 */
       var CG = 150, CH = Math.round(CG * (ry * 2.3) / (hw * 2)), cb = [], cq;
       var CK = 5 + (R() * 3 | 0);
-      for (cq = 0; cq < CK; cq++) cb.push({ x: rr(-0.8, 0.8), y: rr(-0.7, 0.7), a: rr(0.5, 1), sx: rr(0.14, 0.34), sy: rr(0.2, 0.5) });
-      var cf = function (u, v) { var t = 0.05 * Math.sin(u * 4 + v * 3 + a.seed); for (var q = 0; q < CK; q++) { var b = cb[q]; t += b.a * Math.exp(-Math.pow((u - b.x) / b.sx, 2) - Math.pow((v - b.y) / b.sy, 2)); } return t; };
+      for (cq = 0; cq < CK; cq++) cb.push({ x: rr(-0.65, 0.65), y: rr(-0.5, 0.5), a: rr(0.5, 1), sx: rr(0.14, 0.34), sy: rr(0.2, 0.5) });
+      var cf = function (u, v) { var t = 0.05 * Math.sin(u * 4 + v * 3 + a.seed); for (var q = 0; q < CK; q++) { var b = cb[q]; t += b.a * Math.exp(-Math.pow((u - b.x) / b.sx, 2) - Math.pow((v - b.y) / b.sy, 2)); } var wu = Math.cos(u * Math.PI / 2), wv = Math.cos(v * Math.PI / 2); return t * Math.pow(Math.max(0, wu * wv), 0.9); };
       var cV = [], cx0 = cx - hw, cy0 = cy - ry * 1.15, cw = hw * 2 / CG, ch2 = ry * 2.3 / CH, ci, cj;
       for (cj = 0; cj <= CH; cj++) { cV.push([]); for (ci = 0; ci <= CG; ci++) cV[cj].push(cf(ci / CG * 2 - 1, cj / CH * 2 - 1)); }
       var NL = 14;
