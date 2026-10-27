@@ -1263,6 +1263,7 @@ textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; colo
   }
   function igPhotoA(t, sp) {
     var d = t < sp.x0 ? sp.x0 - t : (t > sp.x1 ? t - sp.x1 : 0);
+    if (igBoth(sp)) return igLerp(d, [[0, 1], [0.04, 1], [0.1, 0.45], [0.2, 0], [2, 0]]);
     return igLerp(d, [[0, 1], [0.05, 1], [0.12, 0.55], [0.38, 0], [2, 0]]);
   }
   function igAnchorLeft(sp) { return (sp.x0 + sp.x1) / 2 >= 0.5; }
