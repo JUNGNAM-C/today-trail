@@ -53,11 +53,26 @@ def spaced(text, y, size, fill, fontpath, fit=None, gap=0):
     if fit: gap = (fit - sum(ws)) / (len(text) - 1)
     x = (W - (sum(ws) + gap * (len(text) - 1))) / 2
     for c, w in zip(text, ws): d.text((x, y), c, font=f, fill=fill); x += w + gap
-spaced('RICH ROLL PODCAST', 1690, 26, (36, 52, 78, 255), os.path.join(FONTS, 'WantedSans-Medium.ttf'), gap=12)
+# 맨 아래 한 줄: 영문 출처는 글자 사이를 벌리고, 한글 부제는 보통 간격으로
+def label_line(parts, y, size, fill, fontpath):
+    f = ImageFont.truetype(fontpath, size)       # size는 소수도 됨(폭에 맞춘 크기)
+    widths = [sum(d.textlength(c, font=f) for c in t) + g * (len(t) - 1) if g else d.textlength(t, font=f) for t, g in parts]
+    x = (W - sum(widths)) / 2
+    for (t, g), w in zip(parts, widths):
+        if g:
+            for c in t: d.text((x, y), c, font=f, fill=fill); x += d.textlength(c, font=f) + g
+            x -= g
+        else:
+            d.text((x, y), t, font=f, fill=fill); x += w
 txt = np.array(txt).astype(np.float32); TA = txt[..., 3:] / 255.0
-# 인물 이름은 액자 아래로(위쪽은 자막 자리). 아래 띠 색이 밝으면 남색, 어두우면 크림색 글자
+# 인물 이름(액자 아래)과 맨 아래 출처 줄: 아래 띠 색이 밝으면 남색, 어두우면 크림색 글자
 _nm = Image.new('L', (W, H), 0); d = ImageDraw.Draw(_nm)
 spaced('KILIAN JORNET', FY + S + 44, 44, 255, os.path.join(FONTS, 'WantedSans-Bold.ttf'), fit=840)
+# 출처 줄은 보통 글자 간격으로, 글자 크기를 액자 폭(840)에 딱 맞춘다
+_lab = 'RICH ROLL PODCAST  ·  세계 최고의 트레일 러너, 그의 마음속으로'
+_lf = os.path.join(FONTS, 'WantedSans-Medium.ttf')
+_ls = S / ImageFont.truetype(_lf, 100).getlength(_lab) * 100
+label_line([(_lab, 0)], 1690 + 13 - _ls / 2, _ls, 255, _lf)
 NAME_A = np.array(_nm).astype(np.float32)[..., None] / 255.0
 NAVY_C, CREAM_C = np.array([36, 52, 78], np.float32), np.array([245, 238, 222], np.float32)
 
@@ -701,7 +716,7 @@ def zoom_build(t, tb):
     return compose(img, top, bot, Cc.split)
 
 # ---------- 릴스 순서 ----------
-H1, H2, H3 = 6.0, 6.6, 8.4                                # 자막 시간(5·5·5·5·3·3·3·3·3초 = 35초)에 맞춘 머묾
+H1, H2, H3 = 6.0, 6.6, 11.4                               # 자막 시간(5·5·5·5·3·3·3·3·3초 = 35초) + 끝 제목 3초 = 38초
 def seg_build1(i, t): return build_frame(i, t)
 def seg_A(i, t): return compose(anim_A(i), A.top, A.bot, A.split)
 def seg_out1(i, t):
