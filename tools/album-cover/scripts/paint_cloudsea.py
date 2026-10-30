@@ -187,7 +187,8 @@ def pnz(sx, sy):                                  # (각도 2000 x 거리 1000) 
     r = cv2.GaussianBlur(rng.randn(1000, 2000).astype(np.float32), (0, 0), sigmaX=sx, sigmaY=sy)
     return r / (r.std() + 1e-6)
 def follow(t): return cv2.remap(t, mapx, mapy, cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)
-st1 = follow(pnz(140, 1.2)); st2_ = follow(pnz(70, 2.4)); st3 = follow(pnz(220, 3.5))
+PZ = [pnz(140, 1.2), pnz(70, 2.4), pnz(220, 3.5)]
+st1, st2_, st3 = [follow(p) for p in PZ]
 amp = 0.45 + 0.9 * np.clip(nz(80) * 0.5 + 0.5, 0, 1)
 bandamp = np.ones(N, np.float32)
 for y0 in range(0, N, 70): bandamp[y0:y0 + 70] = rng.uniform(0.6, 1.4)
@@ -198,8 +199,9 @@ M = cv2.getRotationMatrix2D((N / 2, N / 2), 24, 1.0)
 diag = cv2.warpAffine(nz(0, sx=34, sy=1.1), M, (N, N), borderMode=cv2.BORDER_REFLECT)
 f += diag[..., None] * (rock * 2.6)[..., None]
 wv = np.where(G, 1.0, 0.25)
-f *= (1 + 0.045 * nz(26) * wv)[..., None]
-f *= (1 + 0.03 * nz(7) * wv)[..., None]
+W26, W7 = nz(26), nz(7)
+f *= (1 + 0.045 * W26 * wv)[..., None]
+f *= (1 + 0.03 * W7 * wv)[..., None]
 edge = cv2.Canny(np.clip(f, 0, 255).astype(np.uint8), 30, 80)
 edge = cv2.GaussianBlur(edge.astype(np.float32), (0, 0), 2.6) / 255.0
 # 산 윤곽(하늘·구름과 만나는 곳)에는 테두리처럼 보이는 어두운 고임을 두지 않는다
@@ -215,7 +217,39 @@ f = np.where(G[..., None], fb, f)
 paint = np.clip(f, 0, 255).astype(np.uint8)
 Image.fromarray(paint).save(os.path.join(OUT, 'paint.png'))
 # 전환 영상용 개체 마스크(사람·바위·구름바다·해)
-np.savez_compressed(os.path.join(OUT, 'layers.npz'), runner=runner, rock=rock, cloud=CLOUD, sun=SUN, hor=HOR)
+np.savez_compressed(os.path.join(OUT, 'layers.npz'), runner=runner, rock=rock, cloud=CLOUD, sun=SUN, hor=HOR,
+                    fm=FM.astype(np.float16), sun_xy=np.array([SUNX, SUNY, SUNR]))   # fm: 태양에서 멀어지는 정도(하늘이 쌓이는 순서)
+
+# ---------- 릴스용 하늘 고리 영상(3초, 30fps, 끝과 처음이 이어짐) ----------
+# 하늘 층 경계는 제자리에 두고(오므라드는 느낌이 없도록), 태양에서 밝은 고리가 바깥으로만 퍼져 나가며
+# 층 안의 붓결도 바깥으로 흘러간다.
+if os.environ.get('SKY_LOOP'):
+    LD = os.path.join(OUT, 'sky_loop'); os.makedirs(LD, exist_ok=True)
+    NF, LAM = 90, 0.22                                   # 고리 간격(태양에서 멀어지는 정도 단위)
+    SK = SKY & ~runner & ~SUN
+    base = paint.astype(np.float32)
+    for fi in range(NF):
+        ph = fi / NF
+        s_ = sky.copy()
+        # 바깥으로만 나아가는 빛의 고리: 날카로운 밝은 띠가 태양에서 멀어질수록 넓고 옅어짐
+        ring = (0.5 + 0.5 * np.sin(2 * np.pi * (FM / LAM - ph))) ** 4
+        fade = np.exp(-FM / 0.55)
+        s_ = s_ * (1 + 0.075 * ring * fade)[..., None] + (ring * fade * 6)[..., None]
+        # 붓결이 바깥으로 흘러가도록 결 좌표를 밀고, 앞뒤 두 장을 섞어 끝과 처음을 잇는다
+        def flow(p, off):
+            return cv2.remap(p, mapx, (mapy - off).astype(np.float32), cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)
+        stt = []
+        for p in PZ:
+            a_ = flow(p, LAM * 1000 * ph); b_ = flow(p, LAM * 1000 * (ph - 1))
+            stt.append((a_ * (1 - ph) + b_ * ph) / np.sqrt((1 - ph) ** 2 + ph ** 2))
+        fs = s_ * (1 + (0.016 * stt[0] + 0.010 * stt[1] + 0.012 * stt[2]) * amp)[..., None]
+        fs *= (1 + 0.045 * W26 * 0.25)[..., None]; fs *= (1 + 0.03 * W7 * 0.25)[..., None]
+        e_ = cv2.GaussianBlur(cv2.Canny(np.clip(fs, 0, 255).astype(np.uint8), 30, 80).astype(np.float32), (0, 0), 2.6) / 255.0
+        fs *= (1 - 0.09 * np.clip(e_ * 2.0, 0, 1))[..., None]
+        fs += (grain * (6 + 14 * (1 - np.clip(fs.mean(2) / 255, 0, 1))) * 0.35)[..., None]
+        fr = base.copy(); fr[SK] = fs[SK]
+        Image.fromarray(np.clip(fr, 0, 255).astype(np.uint8)).resize((840, 840), Image.LANCZOS).save(os.path.join(LD, f's_{fi:02d}.jpg'), quality=94)
+    print('sky loop', NF, 'frames')
 
 # ---------- 1080x1350 배치 ----------
 topc = tuple(int(v) for v in RT[2])        # 위 띠 = 땅(바위) 색

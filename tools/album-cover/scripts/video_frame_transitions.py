@@ -53,15 +53,22 @@ def spaced(text, y, size, fill, fontpath, fit=None, gap=0):
     if fit: gap = (fit - sum(ws)) / (len(text) - 1)
     x = (W - (sum(ws) + gap * (len(text) - 1))) / 2
     for c, w in zip(text, ws): d.text((x, y), c, font=f, fill=fill); x += w + gap
-spaced('KILIAN JORNET', FY - 100, 44, (245, 238, 222, 255), os.path.join(FONTS, 'WantedSans-Bold.ttf'), fit=840)
 spaced('RICH ROLL PODCAST', 1690, 26, (36, 52, 78, 255), os.path.join(FONTS, 'WantedSans-Medium.ttf'), gap=12)
 txt = np.array(txt).astype(np.float32); TA = txt[..., 3:] / 255.0
+# 인물 이름은 액자 아래로(위쪽은 자막 자리). 아래 띠 색이 밝으면 남색, 어두우면 크림색 글자
+_nm = Image.new('L', (W, H), 0); d = ImageDraw.Draw(_nm)
+spaced('KILIAN JORNET', FY + S + 44, 44, 255, os.path.join(FONTS, 'WantedSans-Bold.ttf'), fit=840)
+NAME_A = np.array(_nm).astype(np.float32)[..., None] / 255.0
+NAVY_C, CREAM_C = np.array([36, 52, 78], np.float32), np.array([245, 238, 222], np.float32)
 
 def compose(pic, top, bot, split):
     cv = np.empty((H, W, 3), np.float32)
     sy = int(round(FY + split)); cv[:sy] = top; cv[sy:] = bot
     cv[FY:FY + S, FX:FX + S] = pic
     cv = cv * (1 - TA) + txt[..., :3] * TA
+    lum = float(np.dot(np.asarray(bot, np.float32), [0.299, 0.587, 0.114]))
+    s_ = min(1.0, max(0.0, (lum - 135) / 25)); nc = CREAM_C * (1 - s_) + NAVY_C * s_
+    cv = cv * (1 - NAME_A) + nc * NAME_A
     return np.clip(cv, 0, 255).astype(np.uint8)
 def bg_mix(a, b, t): return lerp(a.top, b.top, t), lerp(a.bot, b.bot, t), lerp(a.split, b.split, t)
 
@@ -312,6 +319,11 @@ def objects_of(cv, npz=None):
                 if G[y35 + y0:y35 + y0 + 12, x].mean() > 0.6: ridge[x] = y35 + y0; break
         ridge = median_filter(ridge, 9, mode='nearest')
         grd = (yy >= ridge[None, :]) & ~run
+        # 능선 위로 솟은 수풀 언덕처럼, 땅에 붙어 있는 덩어리도 땅에 넣는다
+        n_, lab_ = cv2.connectedComponents(G.astype(np.uint8))
+        touch = np.unique(lab_[grd & G]); touch = touch[touch > 0]
+        grd |= np.isin(lab_, touch) & ~run
+        grd = cv2.morphologyEx(grd.astype(np.uint8), cv2.MORPH_CLOSE, np.ones((7, 7), np.uint8)) > 0
     # 개체를 걷어 낸 하늘: 땅 위 하늘 색을 가로로 넓게 흐려 아래로 잇고(해 같은 점은 지워짐),
     # 그 위에 바로 위 하늘의 잔 붓결만 얹는다
     pic = cv.pic
@@ -405,16 +417,307 @@ for _ in range(3):
     by = cv2.GaussianBlur(_br.randn(S, S).astype(np.float32), (0, 0), 6); by = by / by.std() * 0.9
     BOIL.append(((xx + bx).astype(np.float32), (yy + by).astype(np.float32)))
 H1, H2, H3 = 3.0, 3.0, 3.05
-REEL = [(H1, lambda t: compose(A.pic, A.top, A.bot, A.split)),
-        (STROKE_LEN, lambda t: stroke_frame(t, A, B)),
-        (H2, lambda t: compose(B.pic, B.top, B.bot, B.split)),
-        (ZOOM_LEN, lambda t: zoom_frame(t, B, Cc)),
-        (H3, lambda t: compose(Cc.pic, Cc.top, Cc.bot, Cc.split))]
+
+# ---------- 머무는 동안의 움직임 ----------
+# 1번: 하늘 층이 태양에서 바깥으로 퍼지는 물결(paint_cloudsea.py SKY_LOOP로 만든 3초 고리 영상) +
+#      구름바다 덩어리가 가까운 것일수록 빠르게 왼쪽으로 흘러감(원근)
+# 2·3번: 하늘이 물결처럼 출렁이고, 땅(수풀·바위) 덩어리가 저마다 다른 박자로 바람에 흔들림
+LOOP_DIR = os.path.join(os.path.dirname(C1), 'sky_loop')
+SKY1 = [np.array(Image.open(os.path.join(LOOP_DIR, f's_{k:02d}.jpg'))).astype(np.float32) for k in range(90)] if os.path.isdir(LOOP_DIR) else None
+_L1 = np.load(os.path.join(os.path.dirname(C1), 'layers.npz'))
+CLOUD1 = cv2.resize(_L1['cloud'].astype(np.uint8), (S, S), interpolation=cv2.INTER_NEAREST) > 0
+CW1 = cv2.GaussianBlur(CLOUD1.astype(np.float32), (0, 0), 1.0)[..., None]
+_dep = np.clip((yy - yy[CLOUD1].min()) / (S - yy[CLOUD1].min()), 0, 1)
+_bob = cv2.GaussianBlur(np.random.RandomState(41).randn(S, S).astype(np.float32), (0, 0), 45); _bob /= _bob.std()
+def anim_A(i):
+    t = i / FPS
+    pic = SKY1[i % 90].copy() if SKY1 is not None else A.pic.copy()
+    dx = -(2.5 + 15 * _dep ** 1.4) * t                                # 원근: 수평선 쪽은 느리게, 가까울수록 빠르게(길어진 영상에서도 가장자리가 비치지 않게 천천히)
+    dy = 1.6 * np.sin(2 * np.pi * (t / 3.2) + _bob * 2.5)              # 덩어리마다 다른 박자로 살짝 오르내림
+    cl = cv2.remap(pic, (xx - dx).astype(np.float32), (yy + dy).astype(np.float32), cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)
+    return pic * (1 - CW1) + cl * CW1
+# ---------- 1번 그림이 쌓이며 만들어지는 시작 장면: 땅 → 구름 → 해 → 하늘 → 사람 ----------
+# 빈 종이 위에 층마다 움직이며 나타나 제자리에 내려앉는다.
+def _rs(m, interp=cv2.INTER_NEAREST): return cv2.resize(m.astype(np.float32), (S, S), interpolation=interp)
+ROCK1 = cv2.GaussianBlur(_rs(_L1['rock']), (0, 0), 0.8)
+CLD1 = cv2.GaussianBlur(_rs(_L1['cloud']), (0, 0), 0.8)
+RUN1 = cv2.GaussianBlur(_rs(_L1['runner']), (0, 0), 0.6)
+RUNW = cv2.GaussianBlur(cv2.dilate((RUN1 > 0.05).astype(np.uint8), np.ones((7, 7), np.uint8)).astype(np.float32), (0, 0), 1.5)   # 윤곽 번짐까지 덮는 넓은 사람 자리
+FM1 = _rs(_L1['fm'], cv2.INTER_LINEAR)
+SX1, SY1, SR1 = [float(v) * S / 1000 for v in _L1['sun_xy']]
+SUNDISC = np.clip((SR1 - np.hypot(xx - SX1, yy - SY1)) / 1.5, 0, 1)
+PAPER = hx('#EFE4D3')
+_pg = cv2.GaussianBlur(np.random.RandomState(61).randn(S, S).astype(np.float32), (0, 0), 0.8)
+PAPER_IMG = np.tile(PAPER, (S, S, 1)) + (_pg * 5)[..., None]
+def back_out(x, s=None):                                  # 지나치거나 튕기지 않고, 멈출수록 느려지며 제자리에 섬
+    return 1 - (1 - clamp01(x)) ** 4
+def ease_out(x, p=3): return 1 - (1 - clamp01(x)) ** p
+def warp(img, dx, dy):
+    return cv2.remap(img, (xx - dx).astype(np.float32), (yy - dy).astype(np.float32), cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=0)
+def over(dst, src, a): return dst * (1 - a[..., None]) + src * a[..., None]
+T_ROCK, T_CLOUD, T_SUN, T_SKY, T_RUN = (0.0, 0.9), (0.6, 1.7), (1.4, 2.3), (1.9, 3.4), (3.1, 4.4)
+BUILD_LEN = 4.6
+# 사람 붓터치 조각: 실루엣 안을 작은 벽돌 칸(6x3px)으로 나눠 조각마다 날아올 방향·거리·도착 순서를 정한다
+def make_gather(runm, seed, cw=6, ch=3, angs=(150, 260), dist=(60, 220)):
+    ry, rx = np.where(runm > 0.5); gr = np.random.RandomState(seed); cells = {}
+    for y_, x_ in zip(ry, rx):
+        cells.setdefault((y_ // ch, (x_ + cw // 2 * ((y_ // ch) % 2)) // cw), []).append((x_, y_))
+    pts = np.array([np.mean(v, 0) for v in cells.values()], np.float32)            # 조각 자리(목표)
+    ed = cv2.distanceTransform((runm > 0.5).astype(np.uint8), cv2.DIST_L2, 5)
+    dep = np.clip(ed[pts[:, 1].astype(int), pts[:, 0].astype(int)] / max(ed.max(), 1), 0, 1)
+    th = np.clip((1 - dep) * 0.55 + gr.rand(len(pts)) * 0.45, 0, 1)               # 몸통(깊은 곳)이 먼저 도착
+    ang = np.radians(gr.uniform(angs[0], angs[1], len(pts)))                         # 하늘 쪽에서 날아옴
+    frm = pts + np.stack([np.cos(ang), np.sin(ang)], 1) * gr.uniform(dist[0], dist[1], (len(pts), 1))
+    return dict(pts=pts, th=th, frm=frm, spin=gr.uniform(-90, 90, len(pts)), var=gr.rand(len(pts)) - 0.5, runm=runm, cw=cw, ch=ch)
+GA = make_gather(RUN1, 71)
+def runner_gather(pic, u, g=None, rcol=None):
+    g = g or GA; rcol = A.rcol if rcol is None else rcol
+    present = np.zeros((S, S), np.float32)
+    fly = []
+    hw, hh = int(g['cw'] * 0.85), int(g['ch'] * 1.0)
+    for k in range(len(g['pts'])):
+        p = clamp01((u - g['th'][k] * 0.62) / 0.38)
+        if p <= 0: continue
+        # 실루엣 채움은 마지막 35% 동안 서서히 스며들어, 조각이 닿는 순간 툭 바뀌지 않게
+        land = smooth((p - 0.65) / 0.35)
+        if land > 0:
+            cv2.ellipse(present, (int(g['pts'][k, 0]), int(g['pts'][k, 1])), (hw, hh), 0, 0, 360, float(land), -1, cv2.LINE_AA)
+        if p >= 1: continue
+        e = 1 - (1 - p) ** 4                                # 멈출수록 느려짐(튕김 없음)
+        pos = g['frm'][k] + (g['pts'][k] - g['frm'][k]) * e
+        fly.append((pos, (g['spin'][k] - 15) * (1 - e), e, g['var'][k] * (1 - e), 1 - land))
+    rm = g['runm'] * np.clip(present, 0, 1)                 # 도착한 조각만큼만 실루엣이 채워짐(윤곽은 또렷)
+    pic = over(pic, np.tile(rcol, (S, S, 1)), rm)
+    ov = pic.copy(); mm = np.zeros((S, S), np.float32)
+    sw, sh = g['cw'] / 6.0, g['ch'] / 3.0
+    for pos, ang, e, vr, keep in fly:                       # 날아오는 조각: 기울기·크기·색이 자리에 가까울수록 실루엣 쪽으로 서서히 맞춰짐
+        col = rcol + vr * np.array([30, 26, 40], np.float32) + 8 * (1 - e)
+        ax = (max(int(round((5 + 3 * (1 - e)) * sw)), 2), max(int(round((3 + 1.0 * (1 - e)) * sh)), 1))
+        cv2.ellipse(ov, (int(pos[0]), int(pos[1])), ax, float(ang), 0, 360, [float(c) for c in col], -1, cv2.LINE_AA)
+        cv2.ellipse(mm, (int(pos[0]), int(pos[1])), ax, float(ang), 0, 360, float(min(1.0, 0.4 + e) * keep), -1, cv2.LINE_AA)
+    return over(pic, ov, np.clip(mm, 0, 1))
+def build_frame(i, t):
+    full = anim_A(i)                                       # 머무는 장면과 같은 움직이는 하늘·구름에서 층을 떼어 온다
+    sky_src = SKY1[i % 90] if SKY1 is not None else A.pic
+    sky_src = cv2.inpaint(np.clip(sky_src, 0, 255).astype(np.uint8), (RUNW > 0.05).astype(np.uint8), 5, cv2.INPAINT_TELEA).astype(np.float32)   # 사람 자리는 주변 하늘로 메움
+    pic = PAPER_IMG.copy()
+    # 하늘: 해 곁에서부터 고리가 하나씩 바깥으로 번져 나가며 쌓임(경계는 붓결처럼 들쭉날쭉)
+    u = (t - T_SKY[0]) / (T_SKY[1] - T_SKY[0])
+    if u > 0:
+        R = ease_out(u, 2.2) * 1.05
+        rag = cv2.GaussianBlur(np.random.RandomState(62).randn(S, S).astype(np.float32), (0, 0), 3) * 0.012
+        a = np.clip((R - FM1 + rag) / 0.02, 0, 1) * (yy < A.split + 40)
+        pic = over(pic, sky_src, a)
+    # 해: 구름바다 뒤에서 떠오름
+    u = (t - T_SUN[0]) / (T_SUN[1] - T_SUN[0])
+    if u > 0:
+        dy = (1 - back_out(u, 1.2)) * 70
+        sun = warp(full * SUNDISC[..., None], 0, dy); sa = warp(SUNDISC, 0, dy) * clamp01(u * 3)
+        glow = np.clip(1 - np.hypot(xx - SX1, yy - SY1 - dy) / (SR1 * 2.2), 0, 1) ** 2 * 0.5 * clamp01(u * 2) * (1 - clamp01((t - T_SKY[0]) / 0.6))
+        pic = over(pic, np.tile(hx('#F9D2A6'), (S, S, 1)), glow)
+        pic = over(pic, sun / np.maximum(sa, 1e-3)[..., None] * (sa > 0)[..., None], sa)
+    # 구름바다: 오른쪽에서 밀려 들어와 제자리에(가까운 줄일수록 더 멀리서, 더 빨리)
+    u = (t - T_CLOUD[0]) / (T_CLOUD[1] - T_CLOUD[0])
+    if u > 0:
+        e = back_out(u, 0.9)
+        dxr = (1 - e) * (120 + 380 * _dep ** 1.2)
+        cl = cv2.remap(full, (xx - dxr).astype(np.float32), yy.astype(np.float32), cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)
+        ca = cv2.remap(CLD1, (xx - dxr).astype(np.float32), yy.astype(np.float32), cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=0)
+        ca = ca * np.clip((u * 1.6 - (1 - _dep) * 0.5) / 0.4, 0, 1)    # 먼 줄은 조금 늦게 또렷해짐
+        pic = over(pic, cl, ca)
+    # 땅(바위): 아래에서 솟아올라 내려앉음
+    u = (t - T_ROCK[0]) / (T_ROCK[1] - T_ROCK[0])
+    if u > 0:
+        dy = (1 - back_out(u, 1.3)) * 240
+        wr = lambda m: cv2.remap(m, xx.astype(np.float32), (yy - dy).astype(np.float32), cv2.INTER_LINEAR, borderMode=cv2.BORDER_REPLICATE)
+        rm = wr(ROCK1)                                     # 지나쳐 솟을 때 아래가 비지 않게 맨 아래 줄을 늘려 씀
+        pic = over(pic, wr(A.pic * ROCK1[..., None]) / np.maximum(rm, 1e-3)[..., None], rm * clamp01(u * 2.5))
+    # 사람: 붓터치 조각들이 하늘 쪽에서 날아와 몸통부터 쌓이며 실루엣이 됨
+    u = (t - T_RUN[0]) / (T_RUN[1] - T_RUN[0])
+    if u > 0:
+        pic = runner_gather(pic, u)
+    # 바깥 띠: 위는 땅이 오를 때, 아래는 하늘이 번질 때 종이색에서 제 색으로
+    top = lerp(PAPER * 0.92, A.top, smooth((t - T_ROCK[0]) / 0.9))
+    bot = lerp(PAPER * 0.92, A.bot, smooth((t - T_SKY[0]) / 1.2))
+    return compose(pic, top, bot, A.split)
+if MODE == 'build':
+    ts = [BUILD_LEN * k / 11 for k in range(12)]
+    tiles = [cv2.resize(build_frame(int(t * FPS), t), (180, 320), interpolation=cv2.INTER_AREA) for t in ts]
+    sheet = np.hstack([np.pad(x, ((0, 22), (2, 2), (0, 0)), constant_values=20) for x in tiles])
+    im = Image.fromarray(sheet); dd = ImageDraw.Draw(im)
+    for k, t in enumerate(ts): dd.text((k * 184 + 8, 324), f'{t:.2f}s', fill=(230, 230, 230))
+    im.save(os.path.join(OUT, 'sheet_build.png'))
+    fd = os.path.join(OUT, 'build_frames'); os.makedirs(fd, exist_ok=True)
+    n = int(round((BUILD_LEN + 1.5) * FPS))                 # 쌓인 뒤 1.5초 머묾까지
+    for i in range(n):
+        t = i / FPS
+        fr = build_frame(i, min(t, BUILD_LEN)) if t < BUILD_LEN else compose(anim_A(i), A.top, A.bot, A.split)
+        Image.fromarray(fr).save(os.path.join(fd, f'f_{i:04d}.jpg'), quality=92)
+    print('build', n, 'frames')
+ORC = objects_of(Cc)
+
+# ---------- 2·3번 하늘: 층 경계는 그대로, 빛 줄기와 붓결만 한 방향으로 흐름 ----------
+# 2번은 왼쪽→오른쪽, 3번은 지평선→하늘(위). 땅 덩어리는 저마다 다른 박자로 흔들림.
+xs_ = np.arange(S)
+class SkyParts:
+    def __init__(s, cv, ob, mode):
+        s.cv, s.mode = cv, mode
+        s.grd = ob[1].astype(np.float32)
+        s.gw = cv2.GaussianBlur(s.grd, (0, 0), 1.5)               # 땅 윤곽은 또렷하게
+        ph = cv2.GaussianBlur(np.random.RandomState(53).randn(S, S).astype(np.float32), (0, 0), 38); s.ph = ph / ph.std()
+        # 하늘 결은 땅을 걷어 내고 하늘을 아래로 이어 붙인 판에서 딴다(지평선 윤곽이 결에 섞여 끌려가지 않게)
+        plate = ob[2]
+        s.low = cv2.GaussianBlur(plate, (0, 0), 4); s.hp = plate - s.low
+        # 잔 붓결만 남기고 뚜렷한 윤곽(산등성이·사람 자리 자국)은 걸러 낸다: 큰 값은 0으로
+        mag = np.abs(s.hp).max(2, keepdims=True)
+        s.hp = s.hp * np.clip((9 - mag) / 4, 0, 1)
+        # 하늘 바탕도 땅·사람 자리 근처는 가로로 이어진 같은 줄 색으로(가린 자리 자국이 남지 않게)
+        hole = cv2.dilate((ob[0] | ob[1]).astype(np.uint8), np.ones((15, 15), np.uint8)) > 0
+        low = s.low.copy()
+        for y in range(S):
+            hr = hole[y]
+            if hr.any() and (~hr).any():
+                for ch in range(3): low[y, hr, ch] = np.interp(xs_[hr], xs_[~hr], s.low[y, ~hr, ch])
+        s.low = np.where(hole[..., None], low, s.low)
+        s.hor = float(cv.split)
+SPB, SPC = SkyParts(B, ORB, 'lr'), SkyParts(Cc, ORC, 'up')
+def sky_flow(P, t):
+    """사람을 뺀 움직이는 그림(하늘 흐름 + 땅 흔들림)"""
+    v = 20.0                                                   # 붓결이 흐르는 속도(px/s)
+    if P.mode == 'lr':
+        det = cv2.remap(P.hp, (xx - v * t).astype(np.float32), yy.astype(np.float32), cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)
+        phase = xx / 420 - yy / 900 - t / 3.0 + 0.1 * np.sin(yy / 45)      # 오른쪽으로 나아가는 은은한 빛 줄기(살짝 기울어짐)
+        fade = 0.7
+    else:
+        det = cv2.remap(P.hp, xx.astype(np.float32), (yy + v * t).astype(np.float32), cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)
+        phase = (P.hor - yy) / 150 - t / 2.4 + 0.1 * np.sin(xx / 60)       # 지평선에서 위로 올라가는 빛 줄기
+        fade = np.clip(np.exp(-(P.hor - yy) / 420), 0, 1)
+    ring = (0.5 + 0.5 * np.sin(2 * np.pi * phase)) ** (3 if P.mode == 'lr' else 4) * fade
+    sky = (P.low + det) * (1 + 0.06 * ring)[..., None] + (ring * 5)[..., None]
+    gdx = 3.0 * np.sin(2 * np.pi * t / 2.6 + P.ph * 2.8); gdy = 1.3 * np.sin(2 * np.pi * t / 3.4 + P.ph * 2.1 + 1.0)
+    grd = cv2.remap(P.cv.norun, (xx + gdx).astype(np.float32), (yy + gdy).astype(np.float32), cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)
+    return sky * (1 - P.gw[..., None]) + grd * P.gw[..., None]
+def with_runner(cv, norun_pic): return over(norun_pic, cv.pic, cv.msoft)
+
+class _Swap:                                               # 함수가 쓰는 그림을 잠시 움직이는 그림으로 바꿔 끼움
+    def __init__(s, cv, attr, val): s.cv, s.attr, s.val = cv, attr, val
+    def __enter__(s): s.old = getattr(s.cv, s.attr); setattr(s.cv, s.attr, s.val)
+    def __exit__(s, *a): setattr(s.cv, s.attr, s.old)
+
+# ---------- 1번이 붓터치로 흩어져 빈 종이가 됨: 사람 → 땅·구름 → 하늘(바깥에서 해 쪽으로), 해는 마지막 ----------
+OUT1 = 1.45
+_fm_d = dab_mean(FM1); _fm_d = (_fm_d - _fm_d.min()) / (np.ptp(_fm_d) + 1e-6)
+_sun_d = dab_mean(SUNDISC) > 0.3
+TO = np.where(fA_run, 0.02 + 0.3 * jit, np.where(fA_grd, 0.2 + 0.4 * cyd + 0.2 * jit, 0.45 + 0.55 * (1 - _fm_d) + 0.12 * jit))
+TO = np.where(_sun_d, 1.05 + 0.1 * jit, TO)
+def paper_out(t, apic):
+    t = math.floor(t * FPS / 2) * 2 / FPS
+    sw = cv2.GaussianBlur((t >= TO)[dab_id].astype(np.float32), (0, 0), 1.2)[..., None]
+    pic = PAPER_IMG * sw + apic * (1 - sw)
+    u = (t - TO) / DUR
+    act = np.where((u > 0) & (u < 1))[0]
+    buckets = [[] for _ in range(4)]
+    for k in act:
+        e = u[k] ** 1.6; d = 80 * e; al = 1 - u[k]
+        if al < 0.05: continue
+        col = apic[min(int(cyd[k] * S), S - 1), min(int(cxd[k] * S), S - 1)]
+        buckets[min(int(al * 4), 3)].append((cxd[k] * S + FLOW[k, 0] * d, cyd[k] * S + FLOW[k, 1] * d, DW * 0.62 * (1 - 0.35 * e), k, col))
+    for lv, items in enumerate(buckets):
+        if not items: continue
+        ov = pic.copy(); m = np.zeros((S, S), np.float32)
+        for cx, cy, w, k, col in items:
+            ang = float(np.degrees(np.arctan2(FLOW[k, 1], FLOW[k, 0]))); ax = (max(int(w), 2), max(int(DH * 0.62), 1))
+            cv2.ellipse(ov, (int(cx), int(cy)), ax, ang, 0, 360, [float(c) for c in col], -1, cv2.LINE_AA)
+            cv2.ellipse(m, (int(cx), int(cy)), ax, ang, 0, 360, 1.0, -1, cv2.LINE_AA)
+        pic = over(pic, ov, (lv + 0.5) / 4 * m)
+    return pic
+
+# ---------- 2번이 쌓임: 땅이 솟아오름 → 하늘이 왼쪽에서 오른쪽으로 칠해짐 → 사람 붓터치가 모임 ----------
+B2 = 3.5
+TB_G, TB_S, TB_R = (0.0, 0.9), (0.6, 2.2), (2.1, 3.4)
+GB = make_gather(B.msoft, 72)
+_rag_lr = cv2.GaussianBlur(np.random.RandomState(73).rand(S // 6 + 1).astype(np.float32)[:, None], (0, 0), 0.8)[:, 0]
+RAG_LR = np.repeat(_rag_lr, 6)[:S][:, None] * 70                       # 붓 앞머리가 줄마다 들쭉날쭉
+_rag_up = cv2.GaussianBlur(np.random.RandomState(74).rand(S // 8 + 1).astype(np.float32)[None], (0, 0), 0.8)[0]
+RAG_UP = np.repeat(_rag_up, 8)[:S][None, :] * 50
+def build_B(tb):
+    full = sky_flow(SPB, tb); pic = PAPER_IMG.copy()
+    u = (tb - TB_S[0]) / (TB_S[1] - TB_S[0])
+    if u > 0:                                              # 하늘: 왼쪽에서 오른쪽으로 붓질하듯
+        fx = ease_out(u, 2.4) * (S + 120) - 70
+        pic = over(pic, full, np.clip((fx + RAG_LR - xx) / 14, 0, 1))
+    u = (tb - TB_G[0]) / (TB_G[1] - TB_G[0])
+    if u > 0:                                              # 땅: 아래에서 솟아올라 느려지며 제자리
+        dy = (1 - back_out(u)) * 220
+        wr = lambda m: cv2.remap(m, xx.astype(np.float32), (yy - dy).astype(np.float32), cv2.INTER_LINEAR, borderMode=cv2.BORDER_REPLICATE)
+        gm = wr(SPB.gw)
+        pic = over(pic, wr(full * SPB.gw[..., None]) / np.maximum(gm, 1e-3)[..., None], gm * clamp01(u * 2.5))
+    u = (tb - TB_R[0]) / (TB_R[1] - TB_R[0])
+    if u > 0: pic = runner_gather(pic, u, GB, B.rcol)
+    top = lerp(PAPER * 0.92, B.top, smooth((tb - TB_G[0]) / 0.9))
+    bot = lerp(PAPER * 0.92, B.bot, smooth((tb - TB_S[0]) / 1.3))
+    return compose(pic, top, bot, B.split)
+
+# ---------- 2→3: 확대하며 2번 사람이 흩어짐 → 붓터치 화면이 빈 종이로 → 물러나며 3번이 쌓임 ----------
+Z_IN, Z_MID, Z_OUT = 1.3, 0.45, 2.7
+TC_G, TC_S, TC_R = (0.0, 0.4), (0.2, 0.75), (0.45, 1.0)      # 물러나는 동안(비율): 땅 → 하늘(지평선에서 위로) → 사람
+def built_C(tc, uo):
+    full = sky_flow(SPC, tc); pic = PAPER_IMG.copy()
+    u = (uo - TC_S[0]) / (TC_S[1] - TC_S[0])
+    if u > 0:
+        fy = SPC.hor + 40 - ease_out(u, 2.2) * (SPC.hor + 120)
+        pic = over(pic, full, np.clip((yy - fy + RAG_UP) / 14, 0, 1))
+    u = (uo - TC_G[0]) / (TC_G[1] - TC_G[0])
+    if u > 0:
+        dy = (1 - back_out(u)) * 200
+        wr = lambda m: cv2.remap(m, xx.astype(np.float32), (yy - dy).astype(np.float32), cv2.INTER_LINEAR, borderMode=cv2.BORDER_REPLICATE)
+        gm = wr(SPC.gw)
+        pic = over(pic, wr(full * SPC.gw[..., None]) / np.maximum(gm, 1e-3)[..., None], gm * clamp01(u * 2.5))
+    return pic
+def zoom_build(t, tb):
+    t = math.floor(t * FPS / 2) * 2 / FPS
+    if t < Z_IN:
+        u = t / Z_IN; e = u ** 1.8
+        z = math.exp(math.log(ZM) * e); k = smooth(min(1, u * 1.3))
+        c = (lerp(S / 2, B.core[0], k), lerp(S / 2, B.core[1], k))
+        with _Swap(B, 'norun', sky_flow(SPB, tb)):
+            return compose(zoom_scatter(B, z, c, smooth((u - 0.3) / 0.7)), B.top, B.bot, B.split)
+    if t < Z_IN + Z_MID:                                    # 붓터치 화면이 칸마다 빈 종이 붓터치로
+        u = (t - Z_IN) / Z_MID
+        with _Swap(B, 'norun', sky_flow(SPB, tb)): fa = zoom_scatter(B, ZM, B.core, 1.0)
+        with _Swap(Cc, 'norun', PAPER_IMG): fb = zoom_scatter(Cc, ZM, Cc.core, 1.0, gather=True)
+        sw = cv2.GaussianBlur(np.clip((u * 1.45 - SCELL * 0.45 - 0.1) / 0.12, 0, 1), (0, 0), 1.5)[..., None]
+        m = smooth(u)
+        return compose(fa * (1 - sw) + fb * sw, lerp(B.top, PAPER * 0.92, m), lerp(B.bot, PAPER * 0.92, m), B.split)
+    uo = (t - Z_IN - Z_MID) / Z_OUT; e = 1 - (1 - uo) ** 3      # 물러나며 3번이 쌓임, 사람은 붓터치가 모여 마지막에
+    z = math.exp(math.log(ZM) * (1 - e)); k = smooth(min(1, uo * 1.3))
+    c = (lerp(Cc.core[0], S / 2, k), lerp(Cc.core[1], S / 2, k))
+    tc = t - Z_IN - Z_MID
+    sc = 1 - smooth((uo - TC_R[0]) / (TC_R[1] - TC_R[0]))
+    with _Swap(Cc, 'norun', built_C(tc, uo)):
+        img = zoom_scatter(Cc, z, c, sc, gather=True)
+    top = lerp(PAPER * 0.92, Cc.top, smooth((uo - TC_G[0]) / 0.35))
+    bot = lerp(PAPER * 0.92, Cc.bot, smooth((uo - TC_S[0]) / 0.5))
+    return compose(img, top, bot, Cc.split)
+
+# ---------- 릴스 순서 ----------
+H1, H2, H3 = 6.0, 6.6, 8.4                                # 자막 시간(5·5·5·5·3·3·3·3·3초 = 35초)에 맞춘 머묾
+def seg_build1(i, t): return build_frame(i, t)
+def seg_A(i, t): return compose(anim_A(i), A.top, A.bot, A.split)
+def seg_out1(i, t):
+    m = smooth(t / OUT1)
+    return compose(paper_out(t, anim_A(i)), lerp(A.top, PAPER * 0.92, m), lerp(A.bot, PAPER * 0.92, m), A.split)
+def seg_build2(i, t): return build_B(t)
+def seg_B(i, t): return compose(with_runner(B, sky_flow(SPB, B2 + t)), B.top, B.bot, B.split)
+def seg_zoom(i, t): return zoom_build(t, B2 + H2 + t)
+def seg_C(i, t): return compose(with_runner(Cc, sky_flow(SPC, Z_OUT + t)), Cc.top, Cc.bot, Cc.split)
+REEL = [(BUILD_LEN, seg_build1), (H1, seg_A), (OUT1, seg_out1), (B2, seg_build2), (H2, seg_B),
+        (Z_IN + Z_MID + Z_OUT, seg_zoom), (H3, seg_C)]
 def reel_frame(i):
     t = i / FPS
     for L, fn in REEL:
         if t < L or (L, fn) == REEL[-1]:
-            fr = fn(min(t, L - 1e-3)); break
+            fr = fn(i, min(t, L - 1e-3)); break
         t -= L
     mx, my = BOIL[(i // 3) % 3]
     fr = fr.copy(); fr[FY:FY + S, FX:FX + S] = cv2.remap(fr[FY:FY + S, FX:FX + S], mx, my, cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)
@@ -427,6 +730,13 @@ if MODE == 'frames':
         Image.fromarray(reel_frame(i)).save(os.path.join(fd, f'f_{i:04d}.jpg'), quality=92)
         if i % 30 == 0: print(f'{i}/{n}', flush=True)
     print('done', n, 'frames', f'{REEL_LEN:.2f}s')
+if MODE == 'reelsheet':                                    # 릴스 전체를 일정 간격으로 뽑은 확인용 시트
+    n = int(round(REEL_LEN * FPS)); idx = np.linspace(0, n - 1, 24).astype(int)
+    tiles = [cv2.resize(reel_frame(i)[FY - 140:FY + S + 40, :], (162, 307), interpolation=cv2.INTER_AREA) for i in idx]
+    rows = [np.hstack([np.pad(x, ((0, 18), (2, 2), (0, 0)), constant_values=20) for x in tiles[r * 12:(r + 1) * 12]]) for r in range(2)]
+    im = Image.fromarray(np.vstack(rows)); dd = ImageDraw.Draw(im)
+    for k, i in enumerate(idx): dd.text(((k % 12) * 166 + 6, (k // 12) * 325 + 309), f'{i / FPS:.1f}s', fill=(230, 230, 230))
+    im.save(os.path.join(OUT, 'sheet_reel.png')); print('reel', f'{REEL_LEN:.2f}s')
 if MODE == 'sheet':
     for name, fn, L, a, b in SEQ:
         ts = [L * i / 9 for i in range(10)]
